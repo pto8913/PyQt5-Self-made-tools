@@ -1,4 +1,4 @@
-# 使用したデータセット
+ 使用したデータセット
 国土地理院　基盤地図情報ダウンロードサービス　数値標高データ　5mメッシュデータ(標高)
 URL : https://fgd.gsi.go.jp/download/terms.html
 
@@ -7,6 +7,6 @@ xml_to_json.pyでjsonファイルに変換する
 緯度経度を入力すれば無事表示される
 とても汚いコードですご注意ください
 
-# PyQt5について
+ PyQt5について
 リファレンスガイド
 URL : http://pyqt.sourceforge.net/Docs/PyQt5/
