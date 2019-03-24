@@ -16,62 +16,61 @@ from PyQt5.QtGui import QPixmap, QImage
 
 root = os.path.dirname(os.path.abspath(sys.argv[0]))
 
-class LayoutClass(QWidget):
+class Main(QWidget):
   global root
-  def __init__(self):
-    super().__init__()
-
+  def __init__(self, parent = None):
+    super(Main, self).__init__(parent)
+    
     self.fileList = QListWidget()
-    self.initUI()
-  
-  def initUI(self):
     self.setFileList()
-    self.fileName = self.fileList.item(0).text()
-    self.dirName = "/" + self.fileList.item(0).text()
-    self.fileList.itemSelectionChanged.connect(self.changedSelectItem)
+    self.dirName = self.fileList.item(0).text()
+    self.fileList.itemSelectionChanged.connect(self.showDir)
 
-    self.view = QLabel()
-    self.view.setScaledContents(True)
+    latLabel = QLabel("lat : ")
+    self.latEdit = QLineEdit()
 
-    latLabel = QLabel("lat(緯度): ")
-    self.latEdit = QLineEdit(self)
+    lonLabel = QLabel("lon : ")
+    self.lonEdit = QLineEdit()
 
-    lonLabel = QLabel("lon(経度): ")
-    self.lonEdit = QLineEdit(self)
+    editLayout = QGridLayout()
+    editLayout.addWidget(latLabel, 0, 0)
+    editLayout.addWidget(self.latEdit, 0, 1)
+    editLayout.addWidget(lonLabel, 1, 0)
+    editLayout.addWidget(self.lonEdit, 1, 1)
 
-    grid = QGridLayout()
-    grid.addWidget(latLabel, 0, 0)
-    grid.addWidget(self.latEdit, 0, 1)
-    grid.addWidget(lonLabel, 1, 0)
-    grid.addWidget(self.lonEdit, 1, 1)
-
-    startButton = QPushButton("Start", self)
+    startButton = QPushButton("Start")
     startButton.clicked.connect(self.clickedStart)
-
-    exitButton = QPushButton("Exit", self)
+    
+    exitButton = QPushButton("Exit")
     exitButton.clicked.connect(self.clickedExit)
-
+    
     buttonLayout = QHBoxLayout()
     buttonLayout.addWidget(startButton)
     buttonLayout.addWidget(exitButton)
 
     inputLayout = QVBoxLayout()
     inputLayout.addWidget(self.fileList)
-    inputLayout.addLayout(grid)
+    inputLayout.addLayout(editLayout)
     inputLayout.addLayout(buttonLayout)
+
+    self.canvas = QLabel()
+    self.canvas.setScaledContents(True)
 
     entireLayout = QHBoxLayout()
     entireLayout.addLayout(inputLayout)
-    entireLayout.addWidget(self.view)
+    entireLayout.addWidget(self.canvas)
 
     self.setLayout(entireLayout)
 
-    self.setGeometry(0, 0, 1000, 600)
+    self.setGeometry(300, 300, 300, 200)
     self.setWindowTitle("Main")
-    self.show()
 
   def clickedStart(self):
     self.createTopographicImage()
+
+  def setParam(self, lat, lon):
+    self.latEdit.setText(lat)
+    self.lonEdit.setText(lon)
 
   def clickedExit(self):
     sys.exit()
@@ -81,12 +80,9 @@ class LayoutClass(QWidget):
       for d in dirs:
         self.fileList.addItem(os.path.basename(d))
 
-  def changedSelectItem(self):
-    self.dirName = "/" + self.fileList.selectedItems()[0].text()
-    self.fileName = self.fileList.selectedItems()[0].text()
-    self.showdir = showDir()
-    self.showdir
-    self.close()
+  def showDir(self):
+    self.showDirectory = ShowDir(self)
+    self.showDirectory.widget.show()
 
   def filename(self, lat, lon):
     lat_a = lat / (2/ 3)
@@ -100,7 +96,7 @@ class LayoutClass(QWidget):
     path = self.filename(lat, lon)
     elevs = np.full((225 * 150, ), np.nan)
     try:
-      data = json.load(open(root + self.dirName + "/" + self.dirName + "_json/" + path + ".json", "r"))
+      data = json.load(open(root + "/" + self.dirName + "/" + self.dirName + "_json/" + path + ".json", "r"))
       sp, raw = data["startPoint"], data["elevations"]
       elevs[sp: len(raw) + sp] = raw
     except:
@@ -127,7 +123,8 @@ class LayoutClass(QWidget):
 
     ax.set_xticks([])
     ax.set_yticks([])
-
+    fig.subplots_adjust(left=0.1, right=0.9, bottom=0.1, top=0.9)
+    
     canvas = FigureCanvas(fig)
     canvas.draw()
 
@@ -135,47 +132,49 @@ class LayoutClass(QWidget):
     image = QImage(
       canvas.buffer_rgba(), w, h, QImage.Format_ARGB32
     )
-    self.view.setPixmap(QPixmap(image))
+    self.canvas.setPixmap(QPixmap(image))
 
-class showDir(QWidget):
+class ShowDir:
   global root
   def __init__(self, parent = None):
-    super(showDir, self).__init__(parent)
+    self.widget = QWidget()
+    self.parent = parent
+    self.main = Main()
+    self.path = "/" + self.main.dirName + "/"
 
-    self.fileLayout = LayoutClass()
     self.fileList = QListWidget()
-    self.initUI()
-  
-  def initUI(self):
     self.setFileList()
     self.fileName = self.fileList.item(0).text()
-    self.fileList.itemSelectionChanged.connect(self.fileListChanged)
+    self.fileList.itemSelectionChanged.connect(self.changedSelectItem)
 
-    hbox = QHBoxLayout()
-    hbox.addWidget(self.fileList)
+    okButton = QPushButton("Ok")
+    okButton.clicked.connect(self.clickedOk)
 
-    self.setLayout(hbox)
+    selectLayout = QVBoxLayout()
+    selectLayout.addWidget(self.fileList)
+    selectLayout.addWidget(okButton)
 
-    self.setGeometry(1050, 100, 300, 200)
-    self.setWindowTitle("Show Directory")
-    self.show()
+    self.widget.setLayout(selectLayout)
 
-  def setFileList(self):
-    dirName = self.fileLayout.dirName + "/"
-    for _, _, files in os.walk(root + dirName):
+  def changedSelectItem(self):
+    self.fileName = self.fileList.selectedItems()[0].text()
+    with open(root + self.path + self.fileName, "r") as f:
+      lat, lon = f.readline().split(",")
+    self.parent.setParam(lat, lon)
+
+  def clickedOk(self):
+    self.widget.close()
+
+  def show(self):
+    self.widget.exec_()
+
+  def setFileList(self):   
+    for _, _, files in os.walk(root + self.path):
       for f in files:
         self.fileList.addItem(os.path.basename(f))
-
-  def fileListChanged(self):
-    self.fileName = self.fileList.selectedItems()[0].text()
-    path = self.fileLayout.dirName + "/" + self.fileName
-    with open(root + path, "r") as f:
-      lat, lon = f.readline().split(",")
-    self.fileLayout.latEdit.setText(lat)
-    self.fileLayout.lonEdit.setText(lon)
-    self.fileLayout.show()
-
+  
 if __name__ == '__main__':
   app = QApplication(sys.argv)
-  ex = LayoutClass()
+  ex = Main()
+  ex.show()
   sys.exit(app.exec_())
