@@ -9,8 +9,8 @@ from matplotlib.colors import LightSource
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from PyQt5.QtWidgets import (
-  QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QSplitter, 
-  QGridLayout, QListWidget, QLineEdit, QApplication, QMainWindow
+  QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QSplitter, QAction, QMessageBox,
+  QGridLayout, QListWidget, QLineEdit, QApplication, QMainWindow, QFileDialog
 )
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap, QImage
@@ -19,14 +19,48 @@ root = os.path.dirname(os.path.abspath(sys.argv[0]))
 
 class MainWindow(QMainWindow):
   def __init__(self):
-    super().__init__()
-    self.setCentralWidget(Main())
+    super(MainWindow, self).__init__()
+
+    self.main = Main()
+    self.setCentralWidget(self.main)
     self.initUI()
-  
+
   def initUI(self):
-    self.setGeometry(300, 300, 300, 200)
+    menubar = self.menuBar()
+
+    saveAct = QAction('&Save', self)
+    saveAct.setShortcut('Ctrl+S')
+    saveAct.triggered.connect(self.main.clickedSave)
+
+    exitAct = QAction('&Exit', self)
+    exitAct.setShortcut('Ctrl+Q')
+    exitAct.triggered.connect(self.main.clickedExit)
+
+    fileMenu = menubar.addMenu('&File')
+    fileMenu.addAction(saveAct)
+    fileMenu.addAction(exitAct)
+
+    helpAct = QAction('Help', self)
+    helpAct.triggered.connect(self.clickedHelp)
+
+    helpMenu = menubar.addMenu('&Help')
+    helpMenu.addAction(helpAct)
+    
+    self.setGeometry(0, 0, 500, 400)
     self.setWindowTitle("MainWindow")
     self.show()
+
+  def clickedHelp(self):
+    QMessageBox.information(
+      self,
+      "Help", 
+      "This is Help <br> lat is latitude, lon is longitude. <br> \
+      Enter lat and lon by yourself or select from file list <br> \
+      if lat or lon is blank, you can't show map. \
+      if you want to save figure press Ctrl+S or click Save Figure, <br> \
+      but Be careful Not exist figure can't save.",
+      QMessageBox.Ok
+    )
 
 class Main(QWidget):
   global root
@@ -64,22 +98,40 @@ class Main(QWidget):
     inputLayout.addWidget(self.fileList)
     inputLayout.addLayout(editLayout)
     inputLayout.addLayout(buttonLayout)
-    
+
     inputWidget = QWidget()
     inputWidget.setLayout(inputLayout)
 
     self.canvas = QLabel(u" ここに地形図が表示されます ")
     self.canvas.setScaledContents(True)
 
+    saveButton = QPushButton("Save Figure")
+    saveButton.clicked.connect(self.clickedSave)
+
+    figureLayout = QVBoxLayout()
+    figureLayout.addWidget(self.canvas)
+    figureLayout.addWidget(saveButton)
+
+    figureWidget = QWidget()
+    figureWidget.setLayout(figureLayout)
+
     splitter = QSplitter(Qt.Horizontal)
     splitter.addWidget(inputWidget)
-    splitter.addWidget(self.canvas)
+    splitter.addWidget(figureWidget)
     splitter.setStretchFactor(1, 1)
 
     entireLayout = QHBoxLayout()
     entireLayout.addWidget(splitter)
 
     self.setLayout(entireLayout)
+
+  def clickedSave(self):
+    try:
+      if self.image:
+        fileName, _ = QFileDialog.getSaveFileName(self, "Save")
+        self.image.save(fileName)
+    except:
+      QMessageBox.information(self, "Not Exist Image Error", "Can't save not exist Image", QMessageBox.Ok)
 
   def clickedStart(self):
     self.createTopographicImage()
@@ -94,7 +146,8 @@ class Main(QWidget):
   def setFileList(self):
     for _, dirs, _ in os.walk(root):
       for d in dirs:
-        self.fileList.addItem(os.path.basename(d))
+        if "_json" not in d:
+          self.fileList.addItem(os.path.basename(d))
 
   def showDir(self):
     self.showDirectory = ShowDir(self)
@@ -122,7 +175,11 @@ class Main(QWidget):
     return elevs
 
   def createTopographicImage(self):
-    lat, lon = float(self.latEdit.text()), float(self.lonEdit.text())
+    try:
+      lat, lon = float(self.latEdit.text()), float(self.lonEdit.text())
+    except:
+      QMessageBox.information(self, "None file Error", "Can't create map. <br> Please Press lat and lon.", QMessageBox.Ok)
+      return
     elevs = self.elev(lat, lon)
     elevs[np.isnan(elevs)] = -9999.0
 
@@ -145,10 +202,10 @@ class Main(QWidget):
     canvas.draw()
 
     w, h = canvas.get_width_height()
-    image = QImage(
+    self.image = QImage(
       canvas.buffer_rgba(), w, h, QImage.Format_ARGB32
     )
-    self.canvas.setPixmap(QPixmap(image))
+    self.canvas.setPixmap(QPixmap(self.image))
 
 class ShowDir:
   global root
@@ -187,10 +244,12 @@ class ShowDir:
   def setFileList(self):   
     for _, _, files in os.walk(root + self.path):
       for f in files:
-        self.fileList.addItem(os.path.basename(f))
+        _, ext = f.split(".")
+        if ext == "txt":
+          self.fileList.addItem(os.path.basename(f))
   
 if __name__ == '__main__':
   app = QApplication(sys.argv)
-  ex = Main()
+  ex = MainWindow()
   ex.show()
   sys.exit(app.exec_())
