@@ -1,76 +1,92 @@
+import os
 import sys
-from PyQt5.QtWidgets import (
-  QApplication, QLabel, QLineEdit, QBoxLayout, QMainWindow,
-  QGridLayout, QPushButton, QWidget, QVBoxLayout, QHBoxLayout,
-  QTextEdit, QAction, QTextEdit
-)
+import json
 import numpy as np
-import matplotlib.cm as cm
+from PIL import Image
+import matplotlib.cm as cmap
 import matplotlib.pyplot as plt
 from matplotlib.colors import LightSource
-import json
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from PyQt5.QtWidgets import (
+  QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel,
+  QGridLayout, QListWidget, QLineEdit, QApplication
+)
+from PyQt5.QtGui import QPixmap, QImage
 
-class Map(QMainWindow):
+root = os.path.dirname(os.path.abspath(sys.argv[0]))
+
+class LayoutClass(QWidget):
+  global root
   def __init__(self):
     super().__init__()
+
+    self.fileList = QListWidget()
     self.initUI()
   
   def initUI(self):
-    self.Input = Input(self)
-    self.setCentralWidget(self.Input)
+    self.setFileList()
+    self.fileName = self.fileList.item(0).text()
+    self.dirName = "/" + self.fileList.item(0).text()
+    self.fileList.itemSelectionChanged.connect(self.changedSelectItem)
 
-    exitAct = QAction('&Exit', self)
-    exitAct.setShortcut('Ctrl+Q')
-    exitAct.triggered.connect(self.close)
+    self.view = QLabel()
+    self.view.setScaledContents(True)
 
-    menubar = self.menuBar()
-    fileMenu = menubar.addMenu('&File')
-    fileMenu.addAction(exitAct)
-
-    self.setGeometry(300, 300, 300, 200)
-    self.setWindowTitle('Example')
-    self.show()
-
-class Input(QWidget):
-  def __init__(self, parent):
-    super().__init__(parent)
-    self.initInput()
-  
-  def initInput(self):
-    lat = QLabel("lat :")
-    lon = QLabel("lon :")
-    self.startButton = QPushButton("start")
-    self.quitButton = QPushButton("quit")
-
-    self.startButton.clicked.connect(self.startClicked)
-    self.quitButton.clicked.connect(self.quitClicked)
-
+    latLabel = QLabel("lat(緯度): ")
     self.latEdit = QLineEdit(self)
+
+    lonLabel = QLabel("lon(経度): ")
     self.lonEdit = QLineEdit(self)
 
-    vbox = QVBoxLayout()
-    hbox = QHBoxLayout()
+    grid = QGridLayout()
+    grid.addWidget(latLabel, 0, 0)
+    grid.addWidget(self.latEdit, 0, 1)
+    grid.addWidget(lonLabel, 1, 0)
+    grid.addWidget(self.lonEdit, 1, 1)
 
-    hbox.addWidget(lat)
-    hbox.addWidget(self.latEdit)
-    vbox.addLayout(hbox)
+    startButton = QPushButton("Start", self)
+    startButton.clicked.connect(self.clickedStart)
 
-    hbox = QHBoxLayout()
-    hbox.addWidget(lon)
-    hbox.addWidget(self.lonEdit)
-    vbox.addLayout(hbox)
+    exitButton = QPushButton("Exit", self)
+    exitButton.clicked.connect(self.clickedExit)
 
-    hbox = QHBoxLayout()
-    hbox.addWidget(self.startButton)
-    hbox.addWidget(self.quitButton)
-    vbox.addLayout(hbox)
+    buttonLayout = QHBoxLayout()
+    buttonLayout.addWidget(startButton)
+    buttonLayout.addWidget(exitButton)
 
-    self.setLayout(vbox)
+    inputLayout = QVBoxLayout()
+    inputLayout.addWidget(self.fileList)
+    inputLayout.addLayout(grid)
+    inputLayout.addLayout(buttonLayout)
 
-    self.setGeometry(300, 300, 300, 200)
-    self.setWindowTitle('Topographic map')
+    entireLayout = QHBoxLayout()
+    entireLayout.addLayout(inputLayout)
+    entireLayout.addWidget(self.view)
+
+    self.setLayout(entireLayout)
+
+    self.setGeometry(0, 0, 1000, 600)
+    self.setWindowTitle("Main")
     self.show()
+
+  def clickedStart(self):
+    self.createTopographicImage()
+
+  def clickedExit(self):
+    sys.exit()
+
+  def setFileList(self):
+    for _, dirs, _ in os.walk(root):
+      for d in dirs:
+        self.fileList.addItem(os.path.basename(d))
+
+  def changedSelectItem(self):
+    self.dirName = "/" + self.fileList.selectedItems()[0].text()
+    self.fileName = self.fileList.selectedItems()[0].text()
+    self.showdir = showDir()
+    self.showdir
+    self.close()
 
   def filename(self, lat, lon):
     lat_a = lat / (2/ 3)
@@ -79,63 +95,87 @@ class Input(QWidget):
     lat_c = (lat_b * 10) % 10
     lon_c = (lon_b * 10) % 10
     return "{}{}".format(int(lat_c), int(lon_c))
-  
+
   def elev(self, lat, lon):
-    path = "path"
-    name = self.filename(lat, lon)
+    path = self.filename(lat, lon)
     elevs = np.full((225 * 150, ), np.nan)
     try:
-      data = json.load(open(path + name + ".json", "r"))
-      sp = data["startPoint"] 
-      raw = data["elevations"]
+      data = json.load(open(root + self.dirName + "/" + self.dirName + "_json/" + path + ".json", "r"))
+      sp, raw = data["startPoint"], data["elevations"]
       elevs[sp: len(raw) + sp] = raw
     except:
-      pass
+      elevs = np.full((225 * 150, ), np.nan)
     elevs = elevs.reshape((150, 225))
     elevs = np.flipud(elevs)
     return elevs
 
-  def quitClicked(self):
-    self.close()
-
-  def startClicked(self):
-    lat = float(self.latEdit.text())
-    lon = float(self.lonEdit.text())
-
-    calc_lon = 1/ 8/ 10
-    calc_lat = 2/ 3/ 8/ 10
-    elevs1 = self.elev(lat, lon)
-    elevs2 = self.elev(lat, lon - calc_lon)
-    elevs3 = self.elev(lat, lon + calc_lon)
-    elevs4 = self.elev(lat + calc_lat, lon - calc_lon)
-    elevs5 = self.elev(lat + calc_lat, lon)
-    elevs6 = self.elev(lat + calc_lat, lon + calc_lon)
-
-    elevs = np.vstack((
-      np.hstack((elevs2, elevs1, elevs3)),
-      np.hstack((elevs4, elevs5, elevs6))
-    ))
-
-    elevs[np.isnan(elevs)] = np.nanmin(elevs)
+  def createTopographicImage(self):
+    lat, lon = float(self.latEdit.text()), float(self.lonEdit.text())
+    elevs = self.elev(lat, lon)
+    elevs[np.isnan(elevs)] = -9999.0
 
     fig, ax = plt.subplots()
     elevs = np.flipud(elevs)
     ls = LightSource(azdeg = 180, altdeg = 65)
-    color = ls.shade(elevs, cm.rainbow)
-    cs = ax.imshow(elevs, cm.rainbow)
+    color = ls.shade(elevs, cmap.rainbow)
+    cs = ax.imshow(elevs, cmap.rainbow)
     ax.imshow(color)
 
     make_axes = make_axes_locatable(ax)
     cax = make_axes.append_axes("right", size = "2%", pad = 0.05)
-
     fig.colorbar(cs, cax)
 
     ax.set_xticks([])
     ax.set_yticks([])
 
-    plt.show()
+    canvas = FigureCanvas(fig)
+    canvas.draw()
+
+    w, h = canvas.get_width_height()
+    image = QImage(
+      canvas.buffer_rgba(), w, h, QImage.Format_ARGB32
+    )
+    self.view.setPixmap(QPixmap(image))
+
+class showDir(QWidget):
+  global root
+  def __init__(self, parent = None):
+    super(showDir, self).__init__(parent)
+
+    self.fileLayout = LayoutClass()
+    self.fileList = QListWidget()
+    self.initUI()
+  
+  def initUI(self):
+    self.setFileList()
+    self.fileName = self.fileList.item(0).text()
+    self.fileList.itemSelectionChanged.connect(self.fileListChanged)
+
+    hbox = QHBoxLayout()
+    hbox.addWidget(self.fileList)
+
+    self.setLayout(hbox)
+
+    self.setGeometry(1050, 100, 300, 200)
+    self.setWindowTitle("Show Directory")
+    self.show()
+
+  def setFileList(self):
+    dirName = self.fileLayout.dirName + "/"
+    for _, _, files in os.walk(root + dirName):
+      for f in files:
+        self.fileList.addItem(os.path.basename(f))
+
+  def fileListChanged(self):
+    self.fileName = self.fileList.selectedItems()[0].text()
+    path = self.fileLayout.dirName + "/" + self.fileName
+    with open(root + path, "r") as f:
+      lat, lon = f.readline().split(",")
+    self.fileLayout.latEdit.setText(lat)
+    self.fileLayout.lonEdit.setText(lon)
+    self.fileLayout.show()
 
 if __name__ == '__main__':
   app = QApplication(sys.argv)
-  ex = Map()
+  ex = LayoutClass()
   sys.exit(app.exec_())
