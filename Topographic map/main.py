@@ -9,12 +9,24 @@ from matplotlib.colors import LightSource
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from PyQt5.QtWidgets import (
-  QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel,
-  QGridLayout, QListWidget, QLineEdit, QApplication
+  QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QSplitter, 
+  QGridLayout, QListWidget, QLineEdit, QApplication, QMainWindow
 )
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap, QImage
 
 root = os.path.dirname(os.path.abspath(sys.argv[0]))
+
+class MainWindow(QMainWindow):
+  def __init__(self):
+    super().__init__()
+    self.setCentralWidget(Main())
+    self.initUI()
+  
+  def initUI(self):
+    self.setGeometry(300, 300, 300, 200)
+    self.setWindowTitle("MainWindow")
+    self.show()
 
 class Main(QWidget):
   global root
@@ -26,10 +38,10 @@ class Main(QWidget):
     self.dirName = self.fileList.item(0).text()
     self.fileList.itemSelectionChanged.connect(self.showDir)
 
-    latLabel = QLabel("lat : ")
+    latLabel = QLabel("lat(緯度): ")
     self.latEdit = QLineEdit()
 
-    lonLabel = QLabel("lon : ")
+    lonLabel = QLabel("lon(経度): ")
     self.lonEdit = QLineEdit()
 
     editLayout = QGridLayout()
@@ -52,18 +64,22 @@ class Main(QWidget):
     inputLayout.addWidget(self.fileList)
     inputLayout.addLayout(editLayout)
     inputLayout.addLayout(buttonLayout)
+    
+    inputWidget = QWidget()
+    inputWidget.setLayout(inputLayout)
 
-    self.canvas = QLabel()
+    self.canvas = QLabel(u" ここに地形図が表示されます ")
     self.canvas.setScaledContents(True)
 
+    splitter = QSplitter(Qt.Horizontal)
+    splitter.addWidget(inputWidget)
+    splitter.addWidget(self.canvas)
+    splitter.setStretchFactor(1, 1)
+
     entireLayout = QHBoxLayout()
-    entireLayout.addLayout(inputLayout)
-    entireLayout.addWidget(self.canvas)
+    entireLayout.addWidget(splitter)
 
     self.setLayout(entireLayout)
-
-    self.setGeometry(300, 300, 300, 200)
-    self.setWindowTitle("Main")
 
   def clickedStart(self):
     self.createTopographicImage()
