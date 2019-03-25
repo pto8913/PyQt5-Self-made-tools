@@ -9,6 +9,8 @@ ptn_elev = re.compile(r"(.*),(.*)")
 ptn_sp = re.compile(r"<gml:startPoint>(.*) (.*)</gml:startPoint>")
 # ファイル名を抜き出す正規表現
 ptn_file = re.compile(r"FG-GML-(.*)-(.*)-(.*)-.*-.*.xml")
+# マップの左下の位置
+ptn_lc = re.compile(r"<gml:lowerCorner>(.*) (.*)</gml:lowerCorner>")
 # ファイルが保存してあるディレクトリ
 root = os.path.dirname(os.path.abspath(sys.argv[0]))
 
@@ -20,8 +22,24 @@ def convert(filename):
   # ファイルを開く utf-8_sigの部分は各々の環境によって変わるかもしれません
   with open(filename, "r", encoding = "utf-8_sig") as f:
     while True:
-      # ファイうrを一行ずつ読み込む
+      # ファイルを一行ずつ読み込む
       line = f.readline()
+      # ファイル名とマッチしているか
+      match_file = ptn_file.match(os.path.basename(filename))
+      # ファイル名
+      dest_filebase = "{}".format(match_file.group(3))
+      # lcとマッチするか
+      match_lc = ptn_lc.search(line)
+      if match_lc:
+        # ファイルを書き込むためにtxtを開く
+        dir_ = root + "/" + root[-20:]+"_txt/"
+        # 保存先のディレクトリが存在しなかったらディレクトリを作成する
+        if not os.path.exists(dir_):
+          os.mkdir(dir_)
+        # ファイルを書き込むためにtxtを開く
+        with open(dir_ + "{}.txt".format(dest_filebase), "w") as wf:
+          # 書き込む
+          wf.write(str(match_lc.group(1)) + "," + str(match_lc.group(2)) + "\n")
       # 標高のパターンにマッチするか探す
       match_elev = ptn_elev.search(line)
       # マッチしたら処理
@@ -44,10 +62,6 @@ def convert(filename):
   shape = (225, 150)
   meta["shape"] = shape
   meta["sp"] = meta["sp"][1] * 225 + meta["sp"][0]
-  # ファイル名とマッチしているか
-  match_file = ptn_file.match(os.path.basename(filename))
-  # ファイル名
-  dest_filebase = "{}".format(match_file.group(3))
   # ファイルの保存先のディレクトリ
   dir_dest = root + "/" + root[-20:]+"_json/"
   # 保存先のディレクトリが存在しなかったらディレクトリを作成する
