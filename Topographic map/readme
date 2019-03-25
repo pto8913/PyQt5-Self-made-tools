@@ -4,6 +4,7 @@ URL : https://fgd.gsi.go.jp/download/terms.html
 
 上記URLから表示したい位置のメッシュデータをダウンロードしてきます
 xml_to_json.pyでjsonファイルに変換する
+※xml_to_json.pyはダウンロードしてきたファイルを展開した先のディレクトリ下において下さい
 緯度経度を入力すれば無事表示される
 とても汚いコードですご注意ください
 
