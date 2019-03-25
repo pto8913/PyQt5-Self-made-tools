@@ -46,10 +46,13 @@ def convert(filename):
   meta["sp"] = meta["sp"][1] * 225 + meta["sp"][0]
   # ファイル名とマッチしているか
   match_file = ptn_file.match(os.path.basename(filename))
-  # ファイルの保存先のディレクトリ
-  dir_dest = root + "/" + root[-20:]+"_json/"
   # ファイル名
   dest_filebase = "{}".format(match_file.group(3))
+  # ファイルの保存先のディレクトリ
+  dir_dest = root + "/" + root[-20:]+"_json/"
+  # 保存先のディレクトリが存在しなかったらディレクトリを作成する
+  if not os.path.exists(dir_dest):
+    os.mkdir(dir_dest)
   # startPointとelevationsというキーにそれぞれmeta['sp'], elevationsを要素に
   data = {"startPoint": meta["sp"], "elevations": elevations}
   json.dump(
