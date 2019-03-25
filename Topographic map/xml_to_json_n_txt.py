@@ -32,7 +32,7 @@ def convert(filename):
       match_lc = ptn_lc.search(line)
       if match_lc:
         # ファイルを書き込むためにtxtを開く
-        dir_ = root + "/" + root[-20:]+"_txt/"
+        dir_ = root + "/"
         # 保存先のディレクトリが存在しなかったらディレクトリを作成する
         if not os.path.exists(dir_):
           os.mkdir(dir_)
