@@ -71,7 +71,7 @@ class Layout(QWidget):
   # グローバルなルートくんとベースネームくんだよ
   global root, basename
   def __init__(self, parent = None):
-    super(Main, self).__init__(parent)
+    super(Layout, self).__init__(parent)
     
     # ドラッグアンドドロップを出来るようにするよ
     self.setAcceptDrops(True)
