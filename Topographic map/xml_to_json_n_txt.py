@@ -52,6 +52,7 @@ def convert(filename):
             lat, lon = (match_lc.group(1), match_lc.group(2))
             # ここであらかじめとり得る経度の値を保存しておく
             for i in range(11):
+              # 国土地理院のデータは緯度経度から計算することで求められる
               tmp.append([lat, float(lon)+i*0.013])
           else:
             # 緯度経度を配列から取り出す
