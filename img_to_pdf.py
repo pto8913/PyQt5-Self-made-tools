@@ -214,35 +214,36 @@ class Layout(QWidget):
       QLineEdit.Normal, 
       ""
     )
-    try:
-      path = root + "/" + filename + ".pdf"
-      if os.path.exists(path):
-        # ファイル名が存在していたら怒られるよ
+    if filename:
+      try:
+        path = root + "/" + filename + ".pdf"
+        if os.path.exists(path):
+          # ファイル名が存在していたら怒られるよ
+          QMessageBox.information(
+            self,
+            "Filename Error",
+            "This filename is already exists <br>\
+            Please change.\
+            ",
+            QMessageBox.Ok
+          )
+          return self.clickedSave()
+        # ファイルをpdfに変換して保存するよ。(ここだけあれば他の9割いらないよ)
+        with open(path , "wb") as f:
+          # ファイルのパスが入っている順番通りにpdfにしていくよ
+          f.write(img2pdf.convert([f for f in self.ImagePathList]))
+        f.close()
+      except:
+        # 手動でファイルの拡張子をpngとかjpgに変えているファイルの時に起こるよ
+        # (多分。確認はしてない。)
         QMessageBox.information(
-          self,
-          "Filename Error",
-          "This filename is already exists <br>\
-           Please change.\
+          self, 
+          "WARNING", 
+          "PLEASE CHECK YOUR FILE FORMAT <br>\
+          THIS IS VERY VERY STRANGE SITUATION. <br>\
           ",
           QMessageBox.Ok
         )
-        return self.clickedSave()
-      # ファイルをpdfに変換して保存するよ。(ここだけあれば他の9割いらないよ)
-      with open(path , "wb") as f:
-        # ファイルのパスが入っている順番通りにpdfにしていくよ
-        f.write(img2pdf.convert([f for f in self.ImagePathList]))
-      f.close()
-    except:
-      # 手動でファイルの拡張子をpngとかjpgに変えているファイルの時に起こるよ
-      # (多分。確認はしてない。)
-      QMessageBox.information(
-        self, 
-        "WARNING", 
-        "PLEASE CHECK YOUR FILE FORMAT <br>\
-         THIS IS VERY VERY STRANGE SITUATION. <br>\
-        ",
-        QMessageBox.Ok
-      )
   
   def checkInExt(self, filename):
     # 拡張子がファイル名に入っていたらTrue
