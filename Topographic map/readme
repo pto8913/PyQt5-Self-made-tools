@@ -8,6 +8,8 @@ xml_to_json.pyでjsonファイルに変換する
 緯度経度を入力すれば無事表示される
 とても汚いコードですご注意ください
 
+jsonファイルだけでいいよって方はxml_to_json.pyを
+
  PyQt5について
 リファレンスガイド
 URL : http://pyqt.sourceforge.net/Docs/PyQt5/
