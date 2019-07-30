@@ -3,21 +3,28 @@
 現在、以下のものがあります <br>
 ・電卓　<br>
 ・キャプチャツール <br>
+　-> win10 なら Win + Shift + S <br>
 ・時計  <br>
-・地形図を表示 <br>
 ・ディレクトリビュワー <br>
 ・ペイント 完成2019/03/18 <br>
 ・ミュージックプレイヤー 完成2019/03/19 <br>
 ・地形図を表示するデスクトップアプリを追加 2019/03/26? <br>
-　・xml_to_db.pyを追加 2019/07/30 <br>
-　・main.pyはまだ変更していません <br>
-　・ main.pyの変更は諸事情により来年の3月から4月を予定しています <br>
+　-> xml_to_db.pyを追加 2019/07/30 <br>
+　-> main.pyはまだ変更していません <br>
+　-> main.pyの変更は諸事情により来年の3月から4月を予定しています <br>
 ・pngまたはjpgファイルからpdfファイルに変換するデスクトップアプリを追加 2019/03/27 <br>
 ・DnD (Drag and Drop)を追加 2019/07/30 <br>
-　・ ディレクトリにも対応しています <br>
+　-> ディレクトリにも対応しています <br>
 ・スレッド処理を追加 2019/07/30 <br>
-　・ onClicked内のnotifier.notify.connect(sub)の部分を変更すると簡単に使えます <br>
+　-> onClicked内のnotifier.notify.connect(sub)の部分を変更すると簡単に使えます <br>
 
 # 進行中 
 　-> QAbstarctItemModelによるListTreeModel とても難しい <br>
-　-> 
+　-> topographicalmap main.py 変更修正 <br>
+  -> xml_to_db.py 対応ファイル形式を増やす <br>
+  ->
+  
+# やりたい、タスクが終わったらやる
+  -> DB ビュワー？の作成 <br>
+  -> テキストディタの作成 <br>
+  -> 
