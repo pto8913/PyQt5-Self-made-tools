@@ -17,3 +17,5 @@
 　・ ディレクトリにも対応しています <br>
 ・スレッド処理を追加 2019/07/30 <br>
 　・ onClicked内のnotifier.notify.connect(sub)の部分を変更すると簡単に使えます <br>
+・進行中 -> QAbstarctItemModelによるListTreeModel とても難しい <br>
+　　　　 -> 
