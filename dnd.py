@@ -36,13 +36,11 @@ class Main(QWidget):
       path = url.toLocalFile()
       tmp = path.split(".")
       if len(tmp) != 1:
-        if tmp[1] == "xml":
-          self.__FileList.addItem(os.path.basename(path))
+        self.__FileList.addItem(os.path.basename(path))
       else:
-        for roots, dirs, files in os.walk(tmp[0]):
+        for _, dirs, files in os.walk(tmp[0]):
           for f in files:
-            if f.split(".")[1] == "xml":
-              self.__FileList.addItem(os.path.basename(f))
+            self.__FileList.addItem(os.path.basename(f))
   
           if len(dirs) != 0:
             self.__que = deque()
@@ -51,10 +49,9 @@ class Main(QWidget):
             self.__addDir()
   
   def __addDir(self):
-    for roots, dirs, files in os.walk(self.__que.popleft()):
+    for _, dirs, files in os.walk(self.__que.popleft()):
       for f in files:
-        if f.split(".")[1] == "xml":
-          self.__FileList.addItem(os.path.basename(f))
+        self.__FileList.addItem(os.path.basename(f))
   
       if len(dirs) != 0:
         for d in dirs:
