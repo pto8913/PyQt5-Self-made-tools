@@ -10,7 +10,7 @@
 ・ミュージックプレイヤー 完成2019/03/19 <br>
 ・地形図を表示するデスクトップアプリを追加 2019/03/26? <br>
 　-> xml_to_db.pyを追加 2019/07/30
- 　<p>-> / root / script / xml_to_db.py <br>
+　<p>-> / root / script / xml_to_db.py <br>
 　/ Image / help.png <br>
 　/ DB / <br>
 　/ Terrain_xml_data / </p>
@@ -25,11 +25,12 @@
 # 進行中 
 　-> QAbstarctItemModelによるListTreeModel とても難しい <br>
 　-> topographicalmap main.py 変更修正 <br>
-  -> xml_to_db.py 対応ファイル形式を増やす <br>
-  ->
+　-> xml_to_db.py 対応ファイル形式を増やす <br>
+　-> ボタン一つでいろんな画像処理をしてくれるやつ <br>
+　->
   
 # やりたい、タスクが終わったらやる
-  -> DB ビュワー？の作成 <br>
-  -> テキストディタの作成 <br>
-  -> テトリス　ぷよぷよ <br>
-  ->
+　-> DB ビュワー？の作成 <br>
+　-> テキストディタの作成 <br>
+　-> テトリス　ぷよぷよ <br>
+　->
