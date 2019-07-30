@@ -14,9 +14,9 @@
 ・ミュージックプレイヤー 完成2019/03/19 <br>
   Python3 PyQt5 pygameを主に使用しました <br>
 ・地形図を表示するデスクトップアプリを追加 2019/03/26? <br>
-  Python3 PyQt5を主に使用しました
+  Python3 PyQt5を主に使用しました <br>
 ・pngまたはjpgファイルからpdfファイルに変換するデスクトップアプリを追加 2019/03/27 <br>
-  Python3 PyQt5を主に使用しました
+  Python3 PyQt5を主に使用しました <br>
 ・DnD (Drag and Drop)を追加 2019/07/30 <br>
-  ディレクトリにも対応しています
-  Python3 PyQt5を主に使用しました
+  ディレクトリにも対応しています <br>
+  Python3 PyQt5を主に使用しました <br>
