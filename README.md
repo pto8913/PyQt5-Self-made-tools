@@ -9,7 +9,7 @@
 ・ペイント 完成2019/03/18 <br>
 ・ミュージックプレイヤー 完成2019/03/19 <br>
 ・地形図を表示するデスクトップアプリを追加 2019/03/26? <br>
-　-> xml_to_db.pyを追加 2019/07/30 <br>
+　-> xml_to_db.pyを追加 2019/07/30
  　<p>-> / root / script / xml_to_db.py <br>
 　/ Image / help.png <br>
 　/ DB / <br>
