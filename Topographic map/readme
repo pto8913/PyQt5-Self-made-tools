@@ -15,3 +15,4 @@ jsonファイルだけでいいよって方はxml_to_json.pyを
 URL : http://pyqt.sourceforge.net/Docs/PyQt5/
 
 ### xml_to_sqlite3.py追加　(mainのほうは変更してないです。後々更新予定です)
+マルチスレッドっていいですね。
