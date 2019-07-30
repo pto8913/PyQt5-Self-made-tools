@@ -10,6 +10,10 @@
 ・ミュージックプレイヤー 完成2019/03/19 <br>
 ・地形図を表示するデスクトップアプリを追加 2019/03/26? <br>
 　-> xml_to_db.pyを追加 2019/07/30 <br>
+ 　<p>-> / root / script / xml_to_db.py <br>
+　/ Image / help.png <br>
+　/ DB / <br>
+　/ Terrain_xml_data / </p>
 　-> main.pyはまだ変更していません <br>
 　-> main.pyの変更は諸事情により来年の3月から4月を予定しています <br>
 ・pngまたはjpgファイルからpdfファイルに変換するデスクトップアプリを追加 2019/03/27 <br>
