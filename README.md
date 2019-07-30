@@ -17,6 +17,6 @@
   Python3 PyQt5を主に使用しました
 ・pngまたはjpgファイルからpdfファイルに変換するデスクトップアプリを追加 2019/03/27 <br>
   Python3 PyQt5を主に使用しました
-・DnDを追加 2019/07/30 <br>
+・DnD (Drag and Drop)を追加 2019/07/30 <br>
   ディレクトリにも対応しています
   Python3 PyQt5を主に使用しました
