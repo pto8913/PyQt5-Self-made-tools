@@ -5,9 +5,9 @@ import sqlite3
 from collections import deque
 from PyQt5.QtWidgets import (
   QApplication, QListWidget, QMessageBox, QPushButton, QWidget, QLabel, QMainWindow, 
-  QGridLayout, QVBoxLayout, QLineEdit, QFileDialog, QProgressDialog)
-from PyQt5.QtCore import Qt, QObject, QThread, pyqtSignal
-from PyQt5.QtGui import QFont
+  QGridLayout, QVBoxLayout, QLineEdit, QFileDialog, QProgressDialog, QAction, QProgressBar)
+from PyQt5.QtCore import Qt, QObject, QThread, pyqtSignal, QSize
+from PyQt5.QtGui import QFont, QIcon
 
 basename = lambda x: os.path.basename(x)
 
@@ -34,6 +34,7 @@ class Thread(QThread):
 
   def run(self):
     debugOutput('start thread :' + self.name)
+
     self.notifier.notify.emit()
 
 class Main(QMainWindow):
@@ -47,9 +48,65 @@ class Main(QMainWindow):
     self.__initUI()
     
   def __initUI(self):
-    self.statusBar().showMessage('Ready')
+    self.statusBar().showMessage('')
+
+    menubar = self.menuBar()
+
+    startAct = QAction('Start', self)
+    startAct.setShortcut('Enter')
+    startAct.triggered.connect(self.main_process.onClicked)
+
+    deleteAct = QAction('Delete', self)
+    deleteAct.setShortcut('Delete')
+    deleteAct.triggered.connect(self.main_process.clickedDelete)
+
+    clearAct = QAction('Clear', self)
+    clearAct.setShortcut('Ctrl+W')
+    clearAct.triggered.connect(self.main_process.clickedClear)
+
+    addAct = QAction('Add', self)
+    addAct.setShortcut('Ctrl+O')
+    addAct.triggered.connect(self.main_process.clickedAdd)
+
+    exitAct = QAction('Exit', self)
+    exitAct.setShortcut('Esc')
+    exitAct.triggered.connect(self.main_process.clickedExit)
+
+    sortAct = QAction('Sort', self)
+    sortAct.setShortcut('Ctrl+S')
+    sortAct.triggered.connect(self.main_process.clickedSort)
+
+    fileMenu = menubar.addMenu('&File')
+    fileMenu.addAction(addAct)
+    fileMenu.addAction(sortAct)
+    fileMenu.addAction(startAct)
+    fileMenu.addAction(deleteAct)
+    fileMenu.addAction(clearAct)
+    fileMenu.addAction(exitAct)
+
+    helpAct = QAction(QIcon(self.main_process.img_dir + "help_icon.png"), 'Help', self)
+    helpAct.setShortcut('Ctrl+H')
+    helpAct.triggered.connect(self.__clickedHelp)
+
+    toolbar = self.addToolBar('Help')
+    toolbar.addAction(helpAct)
 
     self.setGeometry(1000, 500, 800, 800)
+
+  def __clickedHelp(self):
+    QMessageBox.information(
+      self, 
+      "Help", 
+      " <center> This is xml_to_sqlite app </center> \
+        <h4> First: </h4> \
+          You should to get 5m DEM(Digital Elevation Data) from here: \
+          <a href = \"https://www.gsi.go.jp/kiban/index.html\"> 国土地理院 </a> \
+        <h4> Second: </h4> \
+          insert DEMdata to db from this app \
+        <h4> Finally </h4> \
+          You can enjoy landscape on main.py",
+      QMessageBox.Ok
+    )
 
 class MainProcess(QWidget):
   def __init__(self):
@@ -96,22 +153,22 @@ class MainProcess(QWidget):
 
   def __initUI(self):
     startButton = QPushButton("Start")
-    startButton.clicked.connect(self.__onClicked)
+    startButton.clicked.connect(self.onClicked)
 
     exitButton = QPushButton("Exit")
-    exitButton.clicked.connect(self.__clickedExit)
+    exitButton.clicked.connect(self.clickedExit)
 
     sortButton = QPushButton("Sort Item")
-    sortButton.clicked.connect(self.__clickedSort)
+    sortButton.clicked.connect(self.clickedSort)
 
     addButton = QPushButton("Add Item")
-    addButton.clicked.connect(self.__clickedAdd)
+    addButton.clicked.connect(self.clickedAdd)
 
     deleteButton = QPushButton("Delete Item")
-    deleteButton.clicked.connect(self.__clickedDelete)
+    deleteButton.clicked.connect(self.clickedDelete)
 
     clearButton = QPushButton("Clear Item")
-    clearButton.clicked.connect(self.__clickedClear)
+    clearButton.clicked.connect(self.clickedClear)
 
     buttonLayout = QGridLayout()
     buttonLayout.addWidget(startButton, 0, 0)
@@ -127,7 +184,9 @@ class MainProcess(QWidget):
 
     self.setLayout(layout)
   
-  def __onClicked(self):
+  def onClicked(self):
+    if len(self.__xmlPathList) == 0:
+      return
     # start sub_process
     self.notifier = Notifier()
     self.thread = Thread(self.notifier, "convert")
@@ -337,16 +396,17 @@ class MainProcess(QWidget):
     
     for url in urls:
       path = url.toLocalFile()
-      print(path)
       tmp = path.split(".")
       if len(tmp) != 1:
-        self.__FileList.addItem(os.path.basename(path))
-        self.__xmlPathList.append(path)
+        if tmp[1] == "xml":
+          self.__FileList.addItem(os.path.basename(path))
+          self.__xmlPathList.append(path)
       else:
         for roots, dirs, files in os.walk(tmp[0]):
           for f in files:
-            self.__FileList.addItem(os.path.basename(f))
-            self.__xmlPathList.append(roots + "/" + f)
+            if f.split(".")[1] == "xml":
+              self.__FileList.addItem(os.path.basename(f))
+              self.__xmlPathList.append(roots + "/" + f)
 
           if len(dirs) != 0:
             self.__que = deque()
@@ -357,56 +417,45 @@ class MainProcess(QWidget):
   def __addDir(self):
     for roots, dirs, files in os.walk(self.__que.popleft()):
       for f in files:
-        self.__FileList.addItem(os.path.basename(f))
-        self.__xmlPathList.append(roots + "/" + f)
+        if f.split(".")[1] == "xml":
+          self.__FileList.addItem(os.path.basename(f))
+          self.__xmlPathList.append(roots + "/" + f)
       
       if len(dirs) != 0:
         for d in dirs:
           self.__que.append(d)
         return self.__addDir()
+
     if len(self.__que) != 0:
       return self.__addDir()
 
-  def __clickedClear(self):
+  def clickedClear(self):
     self.__FileList.clear()
     self.__xmlPathList = []
 
-  def __clickedExit(self):
+  def clickedExit(self):
     exit()
 
-  def __clickedAdd(self):
+  def clickedAdd(self):
     filename, ok = QFileDialog.getOpenFileNames(self, "Open File", self.__xml_dir, filter = "xml file (*.xml)")
     # if clicked cancel
     if not ok:
       return 
-    self.__FileList.addItems(os.path.basename(filename))
-    self.__xmlPathList.append(filename)
+    for f in filename:
+      self.__FileList.addItem(os.path.basename(f))
+      self.__xmlPathList.append(f)
 
-  def __clickedSort(self):
+  def clickedSort(self):
     self.__xmlPathList.sort(key = lambda x: os.path.basename(x))
     self.__FileList.sortItems()
 
-  def __clickedDelete(self):
+  def clickedDelete(self):
     try:
       row = self.__FileList.row(self.__FileList.selectedItems()[0])
       self.__xmlPathList.pop(row)
       self.__FileList.takeItem(row)
     except:
       pass
-
-  def keyPressEvent(self, event):
-    if event.key() == Qt.Key_Escape:
-      self.__clickedExit()
-    if event.key() == Qt.Key_Enter:
-      self.__onClicked()
-    if event.key() == Qt.Key_Insert:
-      self.__clickedSort()
-    if event.key() == Qt.Key_Delete:
-      self.__clickedDelete()
-    if event.key() == Qt.Key_End:
-      self.__clickedClear()
-    if event.key() == Qt.Key_Home:
-      self.__clickedAdd()
 
   def __getStartPoint(self, filename):
     with open(filename, "r", encoding="utf-8_sig") as f:
@@ -431,6 +480,8 @@ class MainProcess(QWidget):
     self.__checkDir(self.__db_dir)
     self.__xml_dir = self.__root_dir + "/Terrain_xml_data/"
     self.__checkDir(self.__xml_dir)
+    self.img_dir = self.__root_dir + "/Image/"
+    self.__checkDir(self.img_dir)
 
 def main():
   app = QApplication(sys.argv)
