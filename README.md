@@ -14,6 +14,6 @@
 　・ main.pyの変更は来年の3月から4月を予定しています <br>
 ・pngまたはjpgファイルからpdfファイルに変換するデスクトップアプリを追加 2019/03/27 <br>
 ・DnD (Drag and Drop)を追加 2019/07/30 <br>
-  ・ ディレクトリにも対応しています <br>
+　・ ディレクトリにも対応しています <br>
 ・スレッド処理を追加 2019/07/30 <br>
-  ・ onClicked内のnotifier.notify.connect(sub)の部分を変更すると簡単に使えます <br>
+　・ onClicked内のnotifier.notify.connect(sub)の部分を変更すると簡単に使えます <br>
