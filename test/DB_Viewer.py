@@ -271,25 +271,27 @@ class ShowDBWidget(QWidget):
     if event.key() == Qt.Key_Escape:
       self.close()
 
-class ShowDBSubWidget(QWidget):
+class ShowDBSubWidget(QTreeView):
   def __init__(self, db_path, db_name):
     super(ShowDBSubWidget, self).__init__()
     
     self.__db_path = db_path
     self.__db_name = db_name
 
+    self.setSortingEnabled(True)
+
     self.__header = 0
     self.__getRow()
+    self.__getItem()
     self.__initUI()
     
   def __initUI(self):
-    tree = QTreeView(self)
-    tree.setSortingEnabled(True)
     self.model = QStandardItemModel(0, len(self.__header))
     self.__setHeader()
-    tree.setModel(self.model)
+    self.__setItem()
+    self.setModel(self.model)
 
-    self.resize(500, 800)
+    self.resize(1500, 1000)
 
   def __setHeader(self):
     for index, h in enumerate(self.__header):
@@ -298,12 +300,33 @@ class ShowDBSubWidget(QWidget):
   def __getRow(self):
     conn = sqlite3.connect(self.__db_path)
     cur = conn.cursor()
+
     cur.execute("select * from {} limit 0".format(self.__db_name))
     self.__header = []
     for d in cur.description:
       self.__header.append(d[0])
+
     cur.close()
     conn.close()
+
+  def __getItem(self):
+    conn = sqlite3.connect(self.__db_path)
+    cur = conn.cursor()
+
+    cur.execute("select * from {}".format(self.__db_name))
+    self.__data = []
+    while True:
+      v = cur.fetchone()
+      if v is None:
+        break
+      self.__data.append(v)
+    
+    cur.close()
+    conn.close()
+  
+  def __setItem(self):
+    for v in zip(*self.__data):
+      self.model
 
   def keyPressEvent(self, event):
     if event.key() == Qt.Key_Escape:
