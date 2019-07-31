@@ -325,8 +325,12 @@ class ShowDBSubWidget(QTreeView):
     conn.close()
   
   def __setItem(self):
+    tmp = []
     for v in zip(*self.__data):
-      self.model
+      tmp.append(v)
+    
+    for index, v in enumerate(tmp):
+      self.model.setItem(index, index, QStandardItem)
 
   def keyPressEvent(self, event):
     if event.key() == Qt.Key_Escape:
