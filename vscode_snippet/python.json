@@ -16,8 +16,9 @@
 		"prefix" : "pyqt",
 		"body" : [
 			"from PyQt5.QtWidgets import (",
-			"  QApplication, QListWidget, QMessageBox, QPushButton, QWidget,",
-			"  QGridLayout, QVBoxLayout, QLineEdit, QFileDialog, QProgressDialog)",
+			"  QApplication, QListWidget, QMessageBox, QPushButton, QWidget, QMainWindow, ",
+			"  QGridLayout, QVBoxLayout, QLineEdit, QFileDialog, QProgressDialog,",
+			")",
 			"from PyQt5.QtCore import Qt, QObject, QThread, pyqtSignal", 
 			"from PyQt5.QtGui import QFont"
 		],
@@ -78,7 +79,7 @@
 			"        for f in files:",
 			"          self.__FileList.addItem(os.path.basename(f))",
 			"",
-			"       if len(dirs) != 0:",
+			"        if len(dirs) != 0:",
 			"          self.__que = deque()",
 			"          for d in dirs:",
 			"            self.__que.append(d)",
@@ -134,5 +135,59 @@
 			"  self.thread.start()",
 		],
 		"description": "qt_sub_thread",
+	},
+
+	"osn" : {
+		"prefix": "osnm",
+		"body": [
+			"import os",
+			"import sys",
+			"import numpy as np",
+			"import matplotlib.pyplot as plt",
+			"",
+		],
+		"description": "osnm",
+	},
+
+	"get_dir" : {
+		"prefix": "get_dir",
+		"body": [
+			"def __checkDir(self, dirname):",
+			"  if not os.path.exists(dirname):",
+			"    os.mkdir(dirname)",
+			"",
+		  "def __getDir(self):",
+			"  self.__this_file_dir = os.path.dirname(os.path.abspath(sys.argv[0]))",
+			"  os.chdir(self.__this_file_dir + '/../../')",
+			"  self.__root_dir = os.getcwd()",
+			"",
+			"  self.__db_dir = self.__root_dir + '/DB/'",
+			"  self.__checkDir(self.__db_dir)",
+			"  self.__xml_dir = self.__root_dir + '/Terrain_xml_data/'",
+			"  self.__checkDir(self.__xml_dir)",
+			"  self.__save_fig_dir = self.__root_dir + '/Image/'",
+			"  self.__checkDir(self.__save_fig_dir)",
+		],
+		"description": "get_dir",
+	},
+
+	"extension" : {
+		"prefix": "extension",
+		"body": [
+			"def __inExtension(self, item):",
+			"  if item.split('.')[1] == 'db':",
+			"     return True",
+			"  return False",
+		],
+		"description": "extension",
+	},
+
+	"qt_button" :{
+		"prefix": "qt_button",
+		"body" : [
+			"Button = QPushButton('button')",
+			"Button.clicked.connect(self.__clicked)"
+		],
+		"description": "qt_button"
 	},
 }
