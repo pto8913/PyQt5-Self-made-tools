@@ -8,16 +8,16 @@ from collections import deque
 
 from PyQt5.QtWidgets import (
   QApplication, 
-  QListWidget, QWidget, QMainWindow, 
-  QLineEdit, QPushButton, 
+  QListWidget, QWidget, QMainWindow, QDockWidget,
+  QLineEdit, QPushButton, QTextEdit, 
   QTreeView,
-  QAction, 
-  QMessageBox, QFileDialog, 
+  QAction, QSizePolicy, 
+  QMessageBox, QFileDialog, QProgressDialog, 
   QGridLayout, QVBoxLayout, QHBoxLayout,
 )
 
 from PyQt5.QtCore import (
-  Qt, QThread, pyqtSignal, QMutex, QMutexLocker
+  Qt, QObject, QThread, pyqtSignal, QMutex, QMutexLocker, QSize,
 )
 from PyQt5.QtGui import (
   QFont, QStandardItemModel, QStandardItem, 
@@ -28,8 +28,29 @@ class Main(QMainWindow):
     super(Main, self).__init__()
 
     self.layout = MainWidget()
+    self.layout.MainSig.connect(self.__addTable)
+
+    self.TableWid = ShowDBWidget()
+    
     self.setCentralWidget(self.layout)
     self.__initUI()
+
+  def __addTable(self, path):
+    self.TableWid = ShowDBWidget(path)
+    self.TableDock = QDockWidget("Tables", self)
+    self.TableDock.setWidget(self.TableWid)
+    self.TableDock.setMinimumSize(500, 500)
+    self.TableDock.setAllowedAreas(Qt.AllDockWidgetAreas)
+    self.addDockWidget(Qt.RightDockWidgetArea, self.TableDock, Qt.Horizontal)
+    self.TableWid.TableSig.connect(self.__addSub)
+
+  def __addSub(self, path, name):
+    self.SubTableWid = ShowDBSubWidget(path, name)
+    self.SubTableDock = QDockWidget("Elements", self)
+    self.SubTableDock.setWidget(self.SubTableWid)
+    self.SubTableDock.setMinimumSize(1000, 500)
+    self.SubTableDock.setAllowedAreas(Qt.AllDockWidgetAreas)
+    self.addDockWidget(Qt.RightDockWidgetArea, self.SubTableDock, Qt.Horizontal)
 
   def __initUI(self):
     menubar = self.menuBar()
@@ -56,9 +77,10 @@ class Main(QMainWindow):
     fileMenu.addAction(clearAct)
     fileMenu.addAction(exitAct)
 
-    self.setGeometry(1000, 500, 500, 800)
+    self.setGeometry(1000, 500, 2000, 800)
 
 class MainWidget(QWidget):
+  MainSig = pyqtSignal(str)
   def __init__(self):
     super(MainWidget, self).__init__()
     
@@ -138,8 +160,8 @@ class MainWidget(QWidget):
       self.__DBPathList.append(f)
 
   def __isDoubleClicked(self):
-    self.sub = ShowDBWidget(self.__db_path)
-    self.sub.show()
+    self.DB = ShowDBWidget(self.__db_path)
+    self.MainSig.emit(self.__db_path)
 
   def dragEnterEvent(self, event):
     if event.mimeData().hasUrls():
@@ -221,6 +243,7 @@ class MainWidget(QWidget):
     self.__checkDir(self.__db_dir)
 
 class ShowDBWidget(QWidget):
+  TableSig = pyqtSignal(str, str)
   def __init__(self, db_path = None):
     super(ShowDBWidget, self).__init__()
     
@@ -233,25 +256,20 @@ class ShowDBWidget(QWidget):
     
   def __initUI(self):
     self.__tableList.itemSelectionChanged.connect(self.__selectItem)
-    self.__tableList.doubleClicked.connect(self.__isDoubleClicked)
+    self.__tableList.itemDoubleClicked.connect(self.__isDoubleClicked)
 
     layout = QVBoxLayout()
     layout.addWidget(self.__tableList)
 
     self.setLayout(layout)
 
-    self.resize(500, 800)
-    if self.__db_path is None:
-      return
-    self.setWindowTitle(os.path.basename(self.__db_path))
-
   def __selectItem(self):
     self.__db_name = self.__tableList.selectedItems()[0].text()
 
   def __isDoubleClicked(self):
     self.sub = ShowDBSubWidget(self.__db_path, self.__db_name)
-    self.sub.show()
-
+    self.TableSig.emit(self.__db_path, self.__db_name)
+    
   def __getTable(self):
     if self.__db_path is None:
       return
@@ -267,10 +285,6 @@ class ShowDBWidget(QWidget):
     self.__tableList.addItems(self.__tables)
     cur.close()
 
-  def keyPressEvent(self, event):
-    if event.key() == Qt.Key_Escape:
-      self.close()
-
 class ShowDBSubWidget(QWidget):
   def __init__(self, path = None, db_name = None):
     super(ShowDBSubWidget, self).__init__()
@@ -283,7 +297,7 @@ class ShowDBSubWidget(QWidget):
     self.__initUI()
 
   def __initUI(self):
-    self.queryEdit = QLineEdit(self.__query)
+    self.queryEdit = QTextEdit(self.__query)
 
     execButton = QPushButton("Execute")
     execButton.clicked.connect(self.__execQuery)
@@ -299,25 +313,14 @@ class ShowDBSubWidget(QWidget):
     layout.addLayout(editLayout)
 
     self.setLayout(layout)
-    self.resize(500, 500)
-
-    self.setWindowTitle(self.__db_name)
-  
-  def keyPressEvent(self, event):
-    if event.key() == Qt.Key_Escape:
-      self.close()
-    if event.key() == Qt.Key_Return:
-      self.__execQuery()
 
   def __execQuery(self):
-    self.__query = self.queryEdit.text()
+    self.__query = self.queryEdit.toPlainText().replace("\n", "")
 
     self.__tree._MyTree__setup(self.__db_path, self.__header, self.__query)
 
     self.__modelSetUp()
     self.__tree.setModel(self.__model)
-
-    self.resize(max(len(self.__header) * 160, 500), 500)
   
   def __modelSetUp(self):
     self.__getHeader()
@@ -418,9 +421,10 @@ def main():
   font = QFont("Meiryo")
   app.setFont(font)
   w = Main()
-  w.setWindowTitle("title")
+  w.setWindowTitle("SQLiteViewer")
   w.show()
   w.raise_()
   app.exec_()
 
 if __name__ == '__main__':
+  main()
