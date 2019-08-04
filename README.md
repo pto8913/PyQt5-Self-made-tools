@@ -9,29 +9,29 @@
 ・ペイント 完成2019/03/18 <br>
 ・ミュージックプレイヤー 完成2019/03/19 <br>
 ・地形図を表示するデスクトップアプリを追加 2019/03/26? <br>
-　-> xml_to_db.pyを追加 2019/07/30
+　　-> xml_to_db.pyを追加 2019/07/30
 　<p>-> / root / script / xml_to_db.py <br>
 　/ Image / help.png <br>
 　/ DB / <br>
 　/ Terrain_xml_data / </p>
-　-> main.pyはまだ変更していません <br>
-　-> main.pyの変更は諸事情により来年の3月から4月を予定しています <br>
+　　-> main.pyはまだ変更していません <br>
+　　-> main.pyの変更は諸事情により来年の3月から4月を予定しています <br>
 ・pngまたはjpgファイルからpdfファイルに変換するデスクトップアプリを追加 2019/03/27 <br>
 ・DnD (Drag and Drop)を追加 2019/07/30 <br>
-　-> ディレクトリにも対応しています <br>
+　　-> ディレクトリにも対応しています <br>
 ・スレッド処理を追加 2019/07/30 <br>
-　-> onClicked内のnotifier.notify.connect(sub)の部分を変更すると簡単に使えます <br>
+　　-> onClicked内のnotifier.notify.connect(sub)の部分を変更すると簡単に使えます <br>
 ・SQLiteのデータベースをみるやつ 2019/08/04 <br>
-  -> SQLite以外にも対応させる（未定）
+  　-> SQLite以外にも対応させる（未定）
 # 進行中 
 　-> QAbstarctItemModelによるListTreeModel とても難しい <br>
 　-> topographicalmap main.py 変更修正 <br>
 　-> ~xml_to_db.py 対応ファイル形式を増やす~ <br>
-  ->
+　->
   
 # やりたい、タスクが終わったらやる
 　-> テキストディタの作成 <br>
 　-> テトリス　ぷよぷよ <br>
 　-> C++ での書き直し <br>
-  -> ボタン一つでいろんな画像処理をしてくれるやつ <br>
-  -> 
+　-> ボタン一つでいろんな画像処理をしてくれるやつ <br>
+　-> 
