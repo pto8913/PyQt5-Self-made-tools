@@ -21,17 +21,17 @@
 　-> ディレクトリにも対応しています <br>
 ・スレッド処理を追加 2019/07/30 <br>
 　-> onClicked内のnotifier.notify.connect(sub)の部分を変更すると簡単に使えます <br>
-
+・SQLiteのデータベースをみるやつ 2019/08/04 <br>
+  -> SQLite以外にも対応させる（未定）
 # 進行中 
 　-> QAbstarctItemModelによるListTreeModel とても難しい <br>
 　-> topographicalmap main.py 変更修正 <br>
-　-> xml_to_db.py 対応ファイル形式を増やす <br>
-　-> ボタン一つでいろんな画像処理をしてくれるやつ <br>
-　-> DB ビュワー？の作成 <br>
+　-> ~xml_to_db.py 対応ファイル形式を増やす~ <br>
   ->
   
 # やりたい、タスクが終わったらやる
 　-> テキストディタの作成 <br>
 　-> テトリス　ぷよぷよ <br>
 　-> C++ での書き直し
+  -> ボタン一つでいろんな画像処理をしてくれるやつ <br>
   -> 
