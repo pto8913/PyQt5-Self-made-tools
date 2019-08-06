@@ -1,6 +1,5 @@
 import os
 import sys
-import time
 from PyQt5.QtWidgets import (
   QApplication, QListWidget, QMessageBox, QPushButton, QWidget,
   QGridLayout, QVBoxLayout, QLineEdit, QFileDialog, QProgressDialog)
