@@ -23,6 +23,7 @@ class Thread(QThread):
   def run(self):
     debugOutput('start thread :' + self.name)
     self.notifier.notify.emit()
+    self.finished.emit()
 
 class Main(QWidget):
   def __init__(self):
@@ -50,6 +51,10 @@ class Main(QWidget):
     self.notifier.moveToThread(self.thread)
     self.notifier.notify.connect(self.__sub, type = Qt.DirectConnection)
     self.thread.start()
+    self.thread.finished.connect(self.__finish)
+
+  def __finish(self):
+    print("finish")
 
   def __sub(self):
     self.isRunning = True
@@ -61,7 +66,6 @@ class Main(QWidget):
 
   def __finishClicked(self):
     self.isRunning = False
-    print("fin")
 
 def main():
   app = QApplication(sys.argv)
