@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import (
   QListWidget, QWidget, QMainWindow, QDockWidget,
   QLineEdit, QPushButton, QTextEdit, 
   QTreeView,
-  QAction, QSizePolicy, 
+  QAction, 
   QMessageBox, QFileDialog, QProgressDialog, 
   QGridLayout, QVBoxLayout, QHBoxLayout,
 )
@@ -130,6 +130,13 @@ class MainWidget(QWidget):
     self.__DBPathList = []
     self.__setDB()
 
+    self.__DBtmp = QListWidget()
+    self.__DBPathtmp = []
+
+    self.__DBReset = QListWidget()
+    self.__DBPathReset = self.__DBPathList[:]
+    self.__copyList(self.__DBReset, self.__DBPathReset)
+
     self.setAcceptDrops(True)
 
     self.__initUI()
@@ -156,12 +163,55 @@ class MainWidget(QWidget):
     buttonLayout.addWidget(clearButton, 1, 0)
     buttonLayout.addWidget(exitButton, 1, 1)
 
+    self.__lineEdit = QLineEdit("Search db")
+    self.__lineEdit.textChanged.connect(self.__SearchThread)
+
     layout = QVBoxLayout()
 
+    layout.addWidget(self.__lineEdit)
     layout.addWidget(self.__DBList)
     layout.addLayout(buttonLayout)
 
     self.setLayout(layout)
+  
+  def __SearchThread(self):
+    self.notifier = Notifier()
+    self.thread = Thread(self.notifier, "Search")
+    self.notifier.moveToThread(self.thread)
+    self.notifier.notify.connect(self.__searchDB, type = Qt.DirectConnection)
+    self.thread.start()
+
+  def __searchDB(self):
+    text = self.__lineEdit.text()
+    if not text:
+      self.__resetDBList()
+      return
+    
+    for item in self.__DBPathList:
+      path = os.path.basename(item).split(".")[0]
+      if text in path:
+        self.__updateDBList(item)
+
+  def __updateDBList(self, item):
+    if not self.__DBtmp:
+      self.__DBPathtmp = self.__DBPathList[:]
+      self.__copyList(self.__DBtmp, self.__DBPathtmp)
+      self.__DBList.clear()
+      self.__DBPathList = []
+    if not item in self.__DBPathList:
+      self.__DBList.addItem(os.path.basename(item))
+      self.__DBPathList.append(item)
+    
+  def __resetDBList(self):
+    self.__DBPathList = self.__DBPathReset[:]
+    self.__copyList(self.__DBList, self.__DBPathList)
+    self.__DBtmp.clear()
+    self.__DBPathtmp = []
+
+  def __copyList(self, out, inp):
+    out.clear()
+    for item in inp:
+      out.addItem(os.path.basename(item))
 
   def __selectItem(self):
     try:
@@ -324,7 +374,6 @@ class ShowDBWidget(QWidget):
     cur.close()
 
 class ShowDBSubWidget(QWidget):
-  keyPressText = pyqtSignal(int)
   def __init__(self, path = None, db_name = None):
     super(ShowDBSubWidget, self).__init__()
     
@@ -337,7 +386,6 @@ class ShowDBSubWidget(QWidget):
 
   def __initUI(self):
     self.queryEdit = QTextEdit(self.__query)
-    self.queryEdit.keyPressText.connect(self.__onKey)
 
     execButton = QPushButton("Execute")
     execButton.clicked.connect(self.__execQuery)
@@ -363,36 +411,42 @@ class ShowDBSubWidget(QWidget):
     check = self.__checkQuery()
     if check == 0:
       self.__tree._MyTree__setup(self.__db_path, self.__header, self.__query)
-
+      if self.__model:
+        self.__model.clear()
       self.__modelSetUp()
       self.__tree.setModel(self.__model)
     elif check == 1:
-      self.__InUpDel()
+      self.__InUpDelCre()
       QMessageBox.information(self, "Complete", "Finished change", QMessageBox.Ok)
+
     elif check == -1:
       QMessageBox.information(
         self, 
         "Warning", 
         """Please check your query and send a pull request or issue to my repository <br>
-            <a href="https://github.com/pto8913/PyQt5-s-tools"> PyQt5-s-tools </a><br>
+            <a href="https://github.com/pto8913/PyQt5-s-tools"> pto8913/PyQt5-s-tools </a><br>
         """, 
         QMessageBox.Ok
-      )
+      )    
 
   def __checkQuery(self):
     funcType = self.__query.split(" ")[0].lower()
 
-    if funcType == "select":
+    if funcType == ("select"):
       return 0
-    if funcType in ("insert", "update", "delete"):
+    if funcType in ("insert", "update", "delete", "create", "drop", "alter"):
       return 1
     return -1
 
-  def __InUpDel(self):
+  def __InUpDelCreDrop(self):
     conn = sqlite3.connect(self.__db_path)
     cur = conn.cursor()
 
-    cur.execute(self.__query)
+    try:
+      cur.execute(self.__query)
+    except sqlite3.Error as e:
+      QMessageBox.information(self, "error", "{}".format(e), QMessageBox.Ok)
+      return 
     conn.commit()
   
   def __modelSetUp(self):
@@ -404,7 +458,11 @@ class ShowDBSubWidget(QWidget):
     conn = sqlite3.connect(self.__db_path)
     cur = conn.cursor()
 
-    cur.execute(self.__query)
+    try:
+      cur.execute(self.__query)
+    except sqlite3.Error as e:
+      QMessageBox.information(self, "error", "{}".format(e), QMessageBox.Ok)
+      return
     self.__header = []
 
     for d in cur.description:
@@ -416,13 +474,6 @@ class ShowDBSubWidget(QWidget):
   def __setHeader(self):
     for index, h in enumerate(self.__header):
       self.__model.setHeaderData(index, Qt.Horizontal, h)
-
-  def __onKey(self, key):
-    if key == Qt.Key_Shift:
-      self.__execQuery()
-  
-  def keyPressEvent(self, event):
-    self.keyPressText.emit(event.key())
 
 class MyTree(QTreeView):
   def __init__(self, path, header, query):
@@ -436,8 +487,12 @@ class MyTree(QTreeView):
     self.__DBLister.addStrObject.connect(self.__addItem)
     self.__DBLister.addDoubleObject.connect(self.__addItem)
     self.__DBLister.addBoolObject.connect(self.__addItem)
+    
     self.__DBLister.setup()
     self.__DBLister.start()
+    
+  def __ext(self, e):
+    self.exceptSig.emit(e)
 
   def __addItem(self, cnt, index, val):
     item = QStandardItem(str(val))
@@ -469,7 +524,11 @@ class DBLister(QThread):
   def run(self):
     conn = sqlite3.connect(self.__db_path)
     cur = conn.cursor()
-    cur.execute(self.__query)
+    try:
+      cur.execute(self.__query)
+    except sqlite3.Error:
+      self.finished.emit()
+      return 
     cnt = 0
     while True:
       values = cur.fetchone()
