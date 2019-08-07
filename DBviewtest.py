@@ -416,8 +416,9 @@ class ShowDBSubWidget(QWidget):
       self.__modelSetUp()
       self.__tree.setModel(self.__model)
     elif check == 1:
-      self.__InUpDelCre()
-      QMessageBox.information(self, "Complete", "Finished change", QMessageBox.Ok)
+      res = self.__InUpDelCreDrop()
+      if res:
+        QMessageBox.information(self, "Complete", "Finished change", QMessageBox.Ok)
 
     elif check == -1:
       QMessageBox.information(
@@ -446,8 +447,9 @@ class ShowDBSubWidget(QWidget):
       cur.execute(self.__query)
     except sqlite3.Error as e:
       QMessageBox.information(self, "error", "{}".format(e), QMessageBox.Ok)
-      return 
+      return False
     conn.commit()
+    return True
   
   def __modelSetUp(self):
     self.__getHeader()
@@ -566,3 +568,4 @@ def main():
   app.exec_()
 
 if __name__ == '__main__':
+  main()
