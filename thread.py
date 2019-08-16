@@ -6,10 +6,6 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, QObject, QThread, pyqtSignal
 from PyQt5.QtGui import QFont
 
-def debugOutput(out):
-  sys.stdout.write(out + '\n')
-  sys.stdout.flush()
-
 class Notifier(QObject):
   notify = pyqtSignal()
 
@@ -21,7 +17,7 @@ class Thread(QThread):
     self.name = name
   
   def run(self):
-    debugOutput('start thread :' + self.name)
+    print('start thread :' + self.name)
     self.notifier.notify.emit()
     self.finished.emit()
 
