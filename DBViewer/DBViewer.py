@@ -18,8 +18,13 @@ from PyQt5.QtGui import (
 )
 
 from DBViewerUI import MainUI, DBListUI
+from DBViewerDirSetting import DirSetting as Ds
+from myfunc import function
 
 basename = lambda x : os.path.basename(x)
+adjustSep = lambda x : Ds().adjustSep(x)
+inExtension = lambda x : function().inExtension(x)
+checkQuery = lambda x : function().checkQuery(x)
 
 class Notifier(QObject):
   notify = pyqtSignal()
@@ -48,21 +53,22 @@ class MainWidget(DBListUI):
   def __init__(self):
     super(MainWidget, self).__init__()
     
-    self.__getDir()
+    self.__db_dir = Ds().getDir()
 
     self.DBList = QListWidget()
     self.__DBPathList = []
-    self.__addDir(self.__db_dir)
-
     self.DBList.itemSelectionChanged.connect(self.selectDBItem)
     self.DBList.itemDoubleClicked.connect(self.isDBItemDoubleClicked)
+
+    self.__addDir(self.__db_dir)
 
     self.tableList = QListWidget()
     self.tableList.itemSelectionChanged.connect(self.selectTableItem)
 
     self.tree = MyTree()
     
-    self.query = "select count(*) from table ;"
+    self.query = "select count(*) from table;"
+    self.__isQueryChanged = False
 
     self.setAcceptDrops(True)
 
@@ -76,7 +82,7 @@ class MainWidget(DBListUI):
     if not res:
       return False
 
-    check = self.__checkQuery()
+    check = checkQuery(self.query)
     if check == 0:
       self.tree._MyTree__setup(self.__db_path, self.__header, self.query)
       if self.model:
@@ -96,15 +102,6 @@ class MainWidget(DBListUI):
         """, 
         QMessageBox.Ok)
 
-  def __checkQuery(self):
-    funcType = self.query.split(" ")[0].lower()
-
-    if funcType == ("select"):
-      return 0
-    if funcType in ("insert", "update", "delete", "create", "drop", "alter"):
-      return 1
-    return -1
-
   def __InUpDelCreDrop(self):
     conn = sqlite3.connect(self.__db_path)
     cur = conn.cursor()
@@ -122,7 +119,7 @@ class MainWidget(DBListUI):
     return True
 
   def modelSetUp(self):
-    if not self.query:
+    if not self.query or not self.__isQueryChanged:
       return False
     res = self.__getHeader()
     if not res:
@@ -156,9 +153,15 @@ class MainWidget(DBListUI):
       self.model.setHeaderData(index, Qt.Horizontal, h)
 
   def selectTableItem(self):
-    self.__db_name = self.tableList.selectedItems()[0].text()
-    self.query = "select count(*) from {};".format(self.__db_name)
-    self.queryEdit.setText(self.query)
+    try:
+      self.__db_name = self.tableList.selectedItems()[0].text()
+      self.query = "select count(*) from {};".format(self.__db_name)
+      self.queryEdit.setText(self.query)
+      self.__isQueryChanged = True
+    except:
+      self.query = "select count(*) from table;"
+      self.queryEdit.setText(self.query)
+      self.__isQueryChanged = False
 
   def __getTable(self):
     if self.__db_path is None:
@@ -196,20 +199,22 @@ class MainWidget(DBListUI):
       self.__DBPathList.pop(row)
       self.DBList.takeItem(row)
     except:
-      pass
+      return
 
   def clickedAdd(self):
     filename, ok = QFileDialog.getOpenFileNames(self, "Open File", self.__db_dir, filter = "db file(*.db)")
     if not ok:
       return
     for f in filename:
-      f = self.__adjustSep(f)
+      f = adjustSep(f)
       if f in self.__DBPathList:
         continue
       self.DBList.addItem(basename(f))
       self.__DBPathList.append(f)
 
   def isDBItemDoubleClicked(self):
+    if len(self.tableList) != 0:
+      self.tableList.clear()
     self.__getTable()
 
   def dragEnterEvent(self, event):
@@ -221,13 +226,13 @@ class MainWidget(DBListUI):
   def dropEvent(self, event):
     urls = event.mimeData().urls()
     for url in urls:
-      path = self.__adjustSep(url.toLocalFile())
+      path = adjustSep(url.toLocalFile())
       tmp = path.split(".")
       if path in self.__DBPathList:
         QMessageBox.information(self, "Warning", "This file already in.", QMessageBox.Ok)
-        return
+        continue
       if len(tmp) != 1:
-        if self.__inExtension(tmp):
+        if inExtension(tmp):
           self.DBList.addItem(basename(path))
           self.__DBPathList.append(path)
       else:
@@ -236,9 +241,9 @@ class MainWidget(DBListUI):
   def __addDir(self, item):
     for roots, dirs, files in os.walk(item):
       for f in files:
-        if self.__inExtension(f):
+        if inExtension(f):
           self.DBList.addItem(basename(f))
-          self.__DBPathList.append(self.__adjustSep(roots + '/' + f))
+          self.__DBPathList.append(adjustSep(roots + '/' + f))
   
       if len(dirs) != 0:
         for d in dirs:
@@ -250,34 +255,6 @@ class MainWidget(DBListUI):
     except:
       return
 
-  def __inExtension(self, item):
-    try:
-      if item.split(".")[-1] == "db":
-        return True
-    except:
-      pass
-    return False
-
-  def __checkDir(self, dirname):
-    if not os.path.exists(dirname):
-      os.mkdir(dirname)
-  
-  def __getDir(self):
-    self.__this_file_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
-    os.chdir(self.__this_file_dir)
-    self.__root_dir = (os.getcwd()).replace('/', os.sep)
-  
-    self.__db_dir = (self.__root_dir + '/DB/').replace('/', os.sep)
-    self.__checkDir(self.__db_dir)
-    self.__addDirPath((self.__this_file_dir, self.__db_dir))
-
-  def __addDirPath(self, paths):
-    for path in paths:
-      sys.path.append(path)
-
-  def __adjustSep(self, path):
-    return path.replace('/', os.sep)
-  
 class MyTree(QTreeView):
   def __init__(self, path = None, header = None, query = None):
     super(MyTree, self).__init__()
@@ -297,9 +274,6 @@ class MyTree(QTreeView):
     self.__DBLister.setup()
     self.__DBLister.start()
     
-  def __ext(self, e):
-    self.exceptSig.emit(e)
-
   def __addItem(self, cnt, index, val):
     item = QStandardItem(str(val))
     model = self.model()
@@ -372,4 +346,3 @@ def main():
   app.exec_()
 
 if __name__ == '__main__':
-  main()
