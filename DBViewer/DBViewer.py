@@ -232,7 +232,7 @@ class MainWidget(DBListUI):
         QMessageBox.information(self, "Warning", "This file already in.", QMessageBox.Ok)
         continue
       if len(tmp) != 1:
-        if inExtension(tmp):
+        if inExtension(path):
           self.DBList.addItem(basename(path))
           self.__DBPathList.append(path)
       else:
@@ -346,3 +346,4 @@ def main():
   app.exec_()
 
 if __name__ == '__main__':
+  main()
