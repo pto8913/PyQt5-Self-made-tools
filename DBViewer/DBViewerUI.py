@@ -27,7 +27,7 @@ class MainUI(QMainWindow):
     fileMenu.addAction(clearAct)
     fileMenu.addAction(exitAct)
 
-    self.setGeometry(100, 100, 1500, 800)
+    self.setGeometry(500, 500, 1500, 800)
 
     deleteAct.triggered.connect(self.layout.clickedDelete)
     clearAct.triggered.connect(self.layout.clickedClear)
@@ -70,7 +70,7 @@ class DBListUI(QWidget):
     editLayout.addWidget(execButton)
 
     tableLayout = QVBoxLayout()
-    self.tree.setMinimumSize(1000, 500)
+    self.tree.setMinimumSize(1200, 500)
     tableLayout.addWidget(self.tree)
     tableLayout.addLayout(editLayout)
 
