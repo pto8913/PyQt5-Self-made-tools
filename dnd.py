@@ -28,39 +28,33 @@ class Main(QWidget):
       event.accept()
     else:
       event.ignore()
-  
+
   def dropEvent(self, event):
     urls = event.mimeData().urls()
-  
     for url in urls:
       path = url.toLocalFile()
-      tmp = path.split(".")
+      tmp = path.split('.')
       if len(tmp) != 1:
-        self.__FileList.addItem(os.path.basename(path))
+        self.__FileList.addItem(basename(path))
       else:
-        for _, dirs, files in os.walk(tmp[0]):
-          for f in files:
-            self.__FileList.addItem(os.path.basename(f))
+        self.__addDir(tmp[0])
   
-          if len(dirs) != 0:
-            self.__que = deque()
-            for d in dirs:
-              self.__que.append(d)
-            self.__addDir()
-  
-  def __addDir(self):
-    for _, dirs, files in os.walk(self.__que.popleft()):
+  def __addDir(self, item):
+    for roots, dirs, files in os.walk(item):
       for f in files:
-        self.__FileList.addItem(os.path.basename(f))
-  
+        self.__FileList.addItem(basename(f))
+
       if len(dirs) != 0:
         for d in dirs:
           self.__que.append(d)
-        return self.__addDir()
-  
-    if len(self.__que) != 0:
-      return self.__addDir()
+        return self.__addDir(self.__que.popleft())
 
+    try:
+      if len(self.__que) != 0:
+        return self.__addDir(self.__que.popleft())
+    except:
+      return
+    
 def main():
   app = QApplication(sys.argv)
   font = QFont("Meiryo")
