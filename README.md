@@ -1,8 +1,9 @@
 # PyQt5-s-tools
 
-# 現在、以下のものがあります
+### 現在、以下のものがあります
 
-# 地形図を表示するデスクトップアプリを追加 2019/03/26? 
+# TerrainViewer 2019/03/26? 
+#### これはあとでいろいろ追加して別のリポジトリで公開する予定です。公開は2020年3月ごろを予定。
 <img src="https://github.com/pto8913/PyQt5-s-tools/blob/master/Image/terrain_viewer.png" title="sample">
 　　-> xml_to_db.pyを追加 2019/07/30 
 　　-> main.pyはまだ変更していません <br>
