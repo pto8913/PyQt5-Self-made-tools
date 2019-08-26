@@ -125,16 +125,16 @@ class MainWidget(DBListUI):
 
       self.cur.execute(self.query)
       self.conn.commit()
-      if self.tableList:
-        self.tableList.clear()
-      self.__getTable()
-
+      self.closeDB()
     except Error as e:
       QMessageBox.Critical(self, "error", "{}".format(e), QMessageBox.Ok)
       self.closeDB()
       return False
 
-    self.closeDB()
+    if self.tableList:
+      self.tableList.clear()
+    self.__getTable()
+
     return True
 
   def CreateDB(self, name):
