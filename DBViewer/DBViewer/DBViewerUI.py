@@ -98,12 +98,24 @@ class DBListUI(QWidget):
     self.DBPathList = []
 
   def clickedDelete(self):
-    try:
-      row = self.DBList.row(self.DBList.selectedItems()[0])
-      self.DBPathList.pop(row)
-      self.DBList.takeItem(row)
-    except:
-      return
+    ret = QMessageBox.information(self, "Delete", "If Delete from List, Yes. <br> Delete from PC, No.", QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
+    if ret == QMessageBox.Yes:
+      try:
+        row = self.DBList.row(self.DBList.selectedItems()[0])
+        self.DBPathList.pop(row)
+        self.DBList.takeItem(row)
+      except:
+        return
+    elif ret == QMessageBox.No:
+      try:
+        row = self.DBList.row(self.DBList.selectedItems()[0])
+        os.remove(self.DBPathList[row])
+        self.DBPathList.pop(row)
+        self.DBList.takeItem(row)
+      except:
+        return
+    elif ret == QMessageBox.Cancel:
+      return 
 
   def clickedAdd(self):
     filename, ok = QFileDialog.getOpenFileNames(self, "Open File", self.__db_dir, filter = "db file(*.db)")
@@ -132,7 +144,7 @@ class DBListUI(QWidget):
       path = adjustSep(url.toLocalFile())
       tmp = path.split(".")
       if path in self.DBPathList:
-        QMessageBox.information(self, "Warning", "This file already in.", QMessageBox.Ok)
+        QMessageBox.Warning(self, "Warning", "This file already in.", QMessageBox.Ok)
         continue
       if len(tmp) != 1:
         if inExtension(path, "db"):
