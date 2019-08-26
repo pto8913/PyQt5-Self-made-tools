@@ -134,7 +134,7 @@ class MainWidget(DBListUI):
       self.CreatOrDropTable()
       return 1
 
-    if funcType in ("insert", "update", "delete", "alter"):
+    if funcType in ("pragma", "insert", "update", "delete", "alter"):
       self.UpdateList()
       if not self.pre_query:
         return 1
