@@ -1,9 +1,26 @@
 from PyQt5.QtWidgets import (
   QMainWindow, QWidget, 
-  QAction, QPushButton,
+  QAction, QPushButton, QMessageBox, 
   QGridLayout, QVBoxLayout, QHBoxLayout,
-  QLineEdit, QTextEdit, 
+  QLineEdit, QTextEdit, QFileDialog, 
 )
+
+from collections import deque
+
+import os
+
+basename = lambda x : os.path.basename(x)
+
+def inExtension(item, ext):
+  try:
+    if item.split(".")[-1] == ext:
+      return True
+  except:
+    pass
+  return False
+
+def adjustSep(path):
+  return path.replace('/', os.sep)
 
 class MainUI(QMainWindow):
   def initUI(self):
@@ -81,3 +98,75 @@ class DBListUI(QWidget):
     layout.addLayout(tableLayout)
 
     self.setLayout(layout)
+
+  # ----------------------------------- UI Func --------------------------------------
+
+  def clickedExit(self):
+    exit()
+
+  def clickedClear(self):
+    self.DBList.clear()
+    self.DBPathList = []
+
+  def clickedDelete(self):
+    try:
+      row = self.DBList.row(self.DBList.selectedItems()[0])
+      self.DBPathList.pop(row)
+      self.DBList.takeItem(row)
+    except:
+      return
+
+  def clickedAdd(self):
+    filename, ok = QFileDialog.getOpenFileNames(self, "Open File", self.__db_dir, filter = "db file(*.db)")
+    if not ok:
+      return
+    for f in filename:
+      f = adjustSep(f)
+      if f in self.DBPathList:
+        continue
+      self.DBList.addItem(basename(f))
+      self.DBPathList.append(f)
+  
+  # -----------------------------------------------------------------------------------
+
+  # ------------------------------ Set DBList (DnD) -----------------------------------
+
+  def dragEnterEvent(self, event):
+    if event.mimeData().hasUrls():
+      event.accept()
+    else:
+      event.ignore()
+  
+  def dropEvent(self, event):
+    urls = event.mimeData().urls()
+    for url in urls:
+      path = adjustSep(url.toLocalFile())
+      tmp = path.split(".")
+      if path in self.DBPathList:
+        QMessageBox.information(self, "Warning", "This file already in.", QMessageBox.Ok)
+        continue
+      if len(tmp) != 1:
+        if inExtension(path, "db"):
+          self.DBList.addItem(basename(path))
+          self.DBPathList.append(path)
+      else:
+        self.__addDir(tmp[0])
+
+  def __addDir(self, item):
+    for roots, dirs, files in os.walk(item):
+      for f in files:
+        if inExtension(f, "db"):
+          self.DBList.addItem(basename(f))
+          self.DBPathList.append(adjustSep(roots + '/' + f))
+  
+      if len(dirs) != 0:
+        for d in dirs:
+          self.__que.append(d)
+        return self.__addDir(self.__que.popleft())
+    try:
+      if len(self.__que) != 0:
+        return self.__addDir(self.__que.popleft())
+    except:
+      return
+
+  # -----------------------------------------------------------------------------------
