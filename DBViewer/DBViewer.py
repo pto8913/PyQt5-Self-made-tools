@@ -80,7 +80,7 @@ class MainWidget(DBListUI):
       QMessageBox.information(self, "Complete", "Finished change", QMessageBox.Ok)
 
     elif check == -1:
-      QMessageBox.information(
+      QMessageBox.Critical(
         self, 
         "Warning", 
         """Please check your query and send a pull request or issue to my repository <br>
@@ -130,7 +130,7 @@ class MainWidget(DBListUI):
       self.__getTable()
 
     except Error as e:
-      QMessageBox.information(self, "error", "{}".format(e), QMessageBox.Ok)
+      QMessageBox.Critical(self, "error", "{}".format(e), QMessageBox.Ok)
       self.closeDB()
       return False
 
@@ -157,7 +157,7 @@ class MainWidget(DBListUI):
       self.cur.execute(self.query)
 
     except Error as e:
-      QMessageBox.information(self, "error", "{}".format(e), QMessageBox.Ok)
+      QMessageBox.Critical(self, "error", "{}".format(e), QMessageBox.Ok)
       self.closeDB()
       return False
 
@@ -213,7 +213,7 @@ class MainWidget(DBListUI):
     try:
       self.cur.execute(self.query)
     except Error as e:
-      QMessageBox.information(self, "error", "{}".format(e), QMessageBox.Ok)
+      QMessageBox.Critical(self, "error", "{}".format(e), QMessageBox.Ok)
       self.closeDB()
       return False
     self.__header = []
