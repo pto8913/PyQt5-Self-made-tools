@@ -1,11 +1,12 @@
 <img src="https://github.com/pto8913/PyQt5-s-tools/blob/master/Image/DBViewer.png" title="サンプル">
 
 # ディレクトリ構成
-root　─ DBViewer.py <br>
-　　　└ DBViewerUI.py <br>
-　　　└ DBViewerUIFunc.py <br>
-　　　└ DBViwerDirSetting.py <br>
-　　　└ /DB/
+root　─ /DB/ <br>
+　　　└/DBViewer/DBViewer.py <br>
+　　　　　　　　 /DBViewer/DBViewerUI.py <br>
+　　　　　　　　　　　　　　└ DBViewerUIFunc.py <br>
+　　　　　　　　　　　　　　└ DBViwerDirSetting.py <br>
+
 
 # サポート
 - SQLite
