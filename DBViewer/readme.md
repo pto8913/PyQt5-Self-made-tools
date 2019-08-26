@@ -3,7 +3,7 @@
 # ディレクトリ構成
 root　─ DBViewer.py <br>
 　　　└ DBViewerUI.py <br>
-　　　└ myfunc.py <br>
+　　　└ DBViewerUIFunc.py <br>
 　　　└ DBViwerDirSetting.py <br>
 　　　└ /DB/
 
