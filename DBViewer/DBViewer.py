@@ -1,7 +1,6 @@
-import os
 import sys
 
-import sqlite3
+from sqlite3 import connect, Error
 
 from PyQt5.QtWidgets import (
   QApplication, QListWidget, QMessageBox,   
@@ -15,37 +14,11 @@ from PyQt5.QtGui import (
   QFont, QStandardItemModel, 
 )
 
-from DBViewerUI import MainUI, DBListUI
-from DBViewerDirSetting import DirSetting as Ds
-from DBViewerUIFunc import MyTree
-
-basename = lambda x : os.path.basename(x)
-
-def adjustSep(path):
-  return path.replace('/', os.sep)
-
-def inExtension(item, ext):
-  try:
-    if item.split(".")[-1] == ext:
-      return True
-  except:
-    pass
-  return False
-
-class Notifier(QObject):
-  notify = pyqtSignal()
-
-class Thread(QThread):
-  def __init__(self, notifier, name):
-    super().__init__()
-    
-    self.notifier = notifier
-    self.name = name
-  
-  def run(self):
-    print('start thread :' + self.name)
-    self.notifier.notify.emit()
-    self.finished.emit()
+from DBViewer import (
+  MainUI, DBListUI, DirSetting as Ds,
+  MyTree, Notifier, Thread, 
+  adjustSep, inExtension, basename,
+)
 
 class Main(MainUI):
   def __init__(self):
@@ -84,11 +57,9 @@ class MainWidget(DBListUI):
   # -------------------------------- Execute Query ----------------------------------
   
   def execQuery(self):
-    #print(self.__db_path)
     self.query = self.queryEdit.toPlainText().replace("\n", " ")
-    print(self.query)
 
-    if self.query not in ("select count(*) from table;", "Create your table!"):
+    if self.query not in ("select count(*) from table;"):
       self.__isQueryChanged = True
 
     check = self.checkQueryType(self.query)
@@ -131,31 +102,39 @@ class MainWidget(DBListUI):
       if funcType == "create" and item.split(" ")[1].lower() == "database":
         self.CreateDB(item.split(" ")[-1].replace(";", ""))
         return 1
-      self.CreatOrDropTable()
-      return 1
+
+      res = self.CreatOrDropTable()
+      if res:
+        return 1
+      return -2
 
     if funcType in ("pragma", "insert", "update", "delete", "alter"):
-      self.UpdateList()
+      res = self.UpdateList()
+      if not res:
+        return -2
       if not self.pre_query:
         return 1
+
       self.query = self.pre_query
       return 0
     return -1
 
   def CreatOrDropTable(self):
     try:
-      conn = sqlite3.connect(self.__db_path)
-      cur = conn.cursor()
+      self.connectDB(self.__db_path)
 
-      cur.execute(self.query)
-      conn.commit()
+      self.cur.execute(self.query)
+      self.conn.commit()
       if self.tableList:
         self.tableList.clear()
       self.__getTable()
-    except sqlite3.Error as e:
+
+    except Error as e:
       QMessageBox.information(self, "error", "{}".format(e), QMessageBox.Ok)
-    cur.close()
-    conn.close()
+      self.closeDB()
+      return False
+
+    self.closeDB()
     return True
 
   def CreateDB(self, name):
@@ -164,32 +143,39 @@ class MainWidget(DBListUI):
         name += ".db"
     except:
       pass
-    conn = sqlite3.connect(self.__db_dir + name)
+
+    conn = connect(self.__db_dir + name)
     conn.close()
     self.DBList.addItem(name)
     self.DBPathList.append(self.__db_dir + name)
-    self.query.setText("Create your table!")
     return True
 
   def UpdateList(self):
-    conn = sqlite3.connect(self.__db_path)
-    cur = conn.cursor()
+    self.connectDB(self.__db_path)
 
     try:
-      cur.execute(self.query)
-    except sqlite3.Error as e:
+      self.cur.execute(self.query)
+
+    except Error as e:
       QMessageBox.information(self, "error", "{}".format(e), QMessageBox.Ok)
-      cur.close()
-      conn.close()
+      self.closeDB()
       return False
-    conn.commit()
-    cur.close()
-    conn.close()
+
+    self.conn.commit()
+    self.closeDB()
     return True
 
   # -----------------------------------------------------------------------------------
 
   # ------------------------------------ DB Func --------------------------------------
+
+  def connectDB(self, name):
+    self.conn = connect(name)
+    self.cur = self.conn.cursor()
+
+  def closeDB(self):
+    self.cur.close()
+    self.conn.close()
 
   def selectDBItem(self):
     try:
@@ -210,37 +196,32 @@ class MainWidget(DBListUI):
   def __getTable(self):
     if self.__db_path is None:
       return
-    conn = sqlite3.connect(self.__db_path)
-    cur = conn.cursor()
-    cur.execute("select * from sqlite_master where type = 'table'")
+    self.connectDB(self.__db_path)
+    self.cur.execute("select * from sqlite_master where type = 'table'")
     self.__tables = []
     while True:
-      v = cur.fetchone()
+      v = self.cur.fetchone()
       if v is None:
         break
       self.__tables.append(v[1])
     self.tableList.addItems(self.__tables)
-    cur.close()
-    conn.close()
+    self.closeDB()
 
   def __getHeader(self):
-    conn = sqlite3.connect(self.__db_path)
-    cur = conn.cursor()
+    self.connectDB(self.__db_path)
 
     try:
-      cur.execute(self.query)
-    except sqlite3.Error as e:
+      self.cur.execute(self.query)
+    except Error as e:
       QMessageBox.information(self, "error", "{}".format(e), QMessageBox.Ok)
-      cur.close()
-      conn.close()
+      self.closeDB()
       return False
     self.__header = []
 
-    for d in cur.description:
+    for d in self.cur.description:
       self.__header.append(d[0])
     
-    cur.close()
-    conn.close()
+    self.closeDB()
     return True
   
   def modelSetUp(self):
@@ -267,7 +248,6 @@ class MainWidget(DBListUI):
     try:
       self.__db_name = self.tableList.selectedItems()[0].text()
       self.query = "select count(*) from {};".format(self.__db_name)
-      self.__isQueryChanged = True
     except:
       self.query = "select count(*) from table;"
       self.__isQueryChanged = False
