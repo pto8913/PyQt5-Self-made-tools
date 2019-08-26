@@ -2,29 +2,35 @@ import os
 import sys
 
 import sqlite3
-from collections import deque
 
 from PyQt5.QtWidgets import (
-  QApplication, 
-  QTreeView, QListWidget, 
-  QMessageBox, QFileDialog,  
+  QApplication, QListWidget, QMessageBox,   
 )
 
 from PyQt5.QtCore import (
-  Qt, QObject, QThread, pyqtSignal, QMutex, QMutexLocker, 
+  Qt, QObject, QThread, pyqtSignal
 )
+
 from PyQt5.QtGui import (
-  QFont, QStandardItemModel, QStandardItem, 
+  QFont, QStandardItemModel, 
 )
 
 from DBViewerUI import MainUI, DBListUI
 from DBViewerDirSetting import DirSetting as Ds
-from myfunc import function
+from DBViewerUIFunc import MyTree
 
 basename = lambda x : os.path.basename(x)
-adjustSep = lambda x : Ds().adjustSep(x)
-inExtension = lambda x : function().inExtension(x)
-checkQuery = lambda x : function().checkQuery(x)
+
+def adjustSep(path):
+  return path.replace('/', os.sep)
+
+def inExtension(item, ext):
+  try:
+    if item.split(".")[-1] == ext:
+      return True
+  except:
+    pass
+  return False
 
 class Notifier(QObject):
   notify = pyqtSignal()
@@ -56,11 +62,11 @@ class MainWidget(DBListUI):
     self.__db_dir = Ds().getDir()
 
     self.DBList = QListWidget()
-    self.__DBPathList = []
+    self.DBPathList = []
     self.DBList.itemSelectionChanged.connect(self.selectDBItem)
     self.DBList.itemDoubleClicked.connect(self.isDBItemDoubleClicked)
 
-    self.__addDir(self.__db_dir)
+    self._DBListUI__addDir(self.__db_dir)
 
     self.tableList = QListWidget()
     self.tableList.itemSelectionChanged.connect(self.selectTableItem)
@@ -68,31 +74,40 @@ class MainWidget(DBListUI):
     self.tree = MyTree()
     
     self.query = "select count(*) from table;"
+    self.pre_query = ""
     self.__isQueryChanged = False
 
     self.setAcceptDrops(True)
 
     self.initUI()
 
+  # -------------------------------- Execute Query ----------------------------------
+  
   def execQuery(self):
     #print(self.__db_path)
     self.query = self.queryEdit.toPlainText().replace("\n", " ")
-    
-    res = self.modelSetUp()
-    if not res:
-      return False
+    print(self.query)
 
-    check = checkQuery(self.query)
+    if self.query not in ("select count(*) from table;", "Create your table!"):
+      self.__isQueryChanged = True
+
+    check = self.checkQueryType(self.query)
     if check == 0:
+      res = self.modelSetUp()
+      if not res:
+        return False
+
+      self.pre_query = self.query
       self.tree._MyTree__setup(self.__db_path, self.__header, self.query)
+
       if self.model:
         self.model.clear()
       self.modelSetUp()
       self.tree.setModel(self.model)
+
     elif check == 1:
-      res = self.__InUpDelCreDrop()
-      if res:
-        QMessageBox.information(self, "Complete", "Finished change", QMessageBox.Ok)
+      QMessageBox.information(self, "Complete", "Finished change", QMessageBox.Ok)
+
     elif check == -1:
       QMessageBox.information(
         self, 
@@ -101,13 +116,67 @@ class MainWidget(DBListUI):
             <a href="https://github.com/pto8913/PyQt5-s-tools"> pto8913/PyQt5-s-tools </a><br>
         """, 
         QMessageBox.Ok)
+  
+  # -----------------------------------------------------------------------------------
 
-  def __InUpDelCreDrop(self):
+  # ------------------------------- For Execute Query ---------------------------------
+
+  def checkQueryType(self, item):
+    funcType = item.split(" ")[0].lower()
+
+    if funcType == ("select"):
+      return 0
+
+    if funcType in ("create", "drop"):
+      if funcType == "create" and item.split(" ")[1].lower() == "database":
+        self.CreateDB(item.split(" ")[-1].replace(";", ""))
+        return 1
+      self.CreatOrDropTable()
+      return 1
+
+    if funcType in ("insert", "update", "delete", "alter"):
+      self.UpdateList()
+      if not self.pre_query:
+        return 1
+      self.query = self.pre_query
+      return 0
+    return -1
+
+  def CreatOrDropTable(self):
+    try:
+      conn = sqlite3.connect(self.__db_path)
+      cur = conn.cursor()
+
+      cur.execute(self.query)
+      conn.commit()
+      if self.tableList:
+        self.tableList.clear()
+      self.__getTable()
+    except sqlite3.Error as e:
+      QMessageBox.information(self, "error", "{}".format(e), QMessageBox.Ok)
+    cur.close()
+    conn.close()
+    return True
+
+  def CreateDB(self, name):
+    try:
+      if not inExtension(name, "db"):
+        name += ".db"
+    except:
+      pass
+    conn = sqlite3.connect(self.__db_dir + name)
+    conn.close()
+    self.DBList.addItem(name)
+    self.DBPathList.append(self.__db_dir + name)
+    self.query.setText("Create your table!")
+    return True
+
+  def UpdateList(self):
     conn = sqlite3.connect(self.__db_path)
     cur = conn.cursor()
 
     try:
-      cur.execute(self.__query)
+      cur.execute(self.query)
     except sqlite3.Error as e:
       QMessageBox.information(self, "error", "{}".format(e), QMessageBox.Ok)
       cur.close()
@@ -118,15 +187,41 @@ class MainWidget(DBListUI):
     conn.close()
     return True
 
-  def modelSetUp(self):
-    if not self.query or not self.__isQueryChanged:
-      return False
-    res = self.__getHeader()
-    if not res:
-      return False
-    self.model = QStandardItemModel(0, len(self.__header))
-    self.__setHeader()
-    return True
+  # -----------------------------------------------------------------------------------
+
+  # ------------------------------------ DB Func --------------------------------------
+
+  def selectDBItem(self):
+    try:
+      row = self.DBList.row(self.DBList.selectedItems()[0])
+      self.__db_path = self.DBPathList[row]
+    except:
+      return
+
+  def isDBItemDoubleClicked(self):
+    if len(self.tableList) != 0:
+      self.tableList.clear()
+    self.__getTable()
+
+  # -----------------------------------------------------------------------------------
+
+  # ----------------------------------- Set Table -------------------------------------
+
+  def __getTable(self):
+    if self.__db_path is None:
+      return
+    conn = sqlite3.connect(self.__db_path)
+    cur = conn.cursor()
+    cur.execute("select * from sqlite_master where type = 'table'")
+    self.__tables = []
+    while True:
+      v = cur.fetchone()
+      if v is None:
+        break
+      self.__tables.append(v[1])
+    self.tableList.addItems(self.__tables)
+    cur.close()
+    conn.close()
 
   def __getHeader(self):
     conn = sqlite3.connect(self.__db_path)
@@ -147,194 +242,40 @@ class MainWidget(DBListUI):
     cur.close()
     conn.close()
     return True
+  
+  def modelSetUp(self):
+    if not self.query or not self.__isQueryChanged:
+      return False
+
+    res = self.__getHeader()
+    if not res:
+      return False
+
+    self.model = QStandardItemModel(0, len(self.__header))
+    self.__setHeader()
+    return True
 
   def __setHeader(self):
     for index, h in enumerate(self.__header):
       self.model.setHeaderData(index, Qt.Horizontal, h)
 
+  # -----------------------------------------------------------------------------------
+
+  # ---------------------------------- Table Func -------------------------------------
+
   def selectTableItem(self):
     try:
       self.__db_name = self.tableList.selectedItems()[0].text()
       self.query = "select count(*) from {};".format(self.__db_name)
-      self.queryEdit.setText(self.query)
       self.__isQueryChanged = True
     except:
       self.query = "select count(*) from table;"
-      self.queryEdit.setText(self.query)
       self.__isQueryChanged = False
+    self.queryEdit.setText(self.query)
+    return True
 
-  def __getTable(self):
-    if self.__db_path is None:
-      return
-    conn = sqlite3.connect(self.__db_path)
-    cur = conn.cursor()
-    cur.execute("select * from sqlite_master where type = 'table'")
-    self.__tables = []
-    while True:
-      v = cur.fetchone()
-      if v is None:
-        break
-      self.__tables.append(v[1])
-    self.tableList.addItems(self.__tables)
-    cur.close()
-    conn.close()
+  # -----------------------------------------------------------------------------------
     
-  def selectDBItem(self):
-    try:
-      row = self.DBList.row(self.DBList.selectedItems()[0])
-      self.__db_path = self.__DBPathList[row]
-    except:
-      return
-
-  def clickedExit(self):
-    exit()
-
-  def clickedClear(self):
-    self.DBList.clear()
-    self.__DBPathList = []
-
-  def clickedDelete(self):
-    try:
-      row = self.DBList.row(self.DBList.selectedItems()[0])
-      self.__DBPathList.pop(row)
-      self.DBList.takeItem(row)
-    except:
-      return
-
-  def clickedAdd(self):
-    filename, ok = QFileDialog.getOpenFileNames(self, "Open File", self.__db_dir, filter = "db file(*.db)")
-    if not ok:
-      return
-    for f in filename:
-      f = adjustSep(f)
-      if f in self.__DBPathList:
-        continue
-      self.DBList.addItem(basename(f))
-      self.__DBPathList.append(f)
-
-  def isDBItemDoubleClicked(self):
-    if len(self.tableList) != 0:
-      self.tableList.clear()
-    self.__getTable()
-
-  def dragEnterEvent(self, event):
-    if event.mimeData().hasUrls():
-      event.accept()
-    else:
-      event.ignore()
-  
-  def dropEvent(self, event):
-    urls = event.mimeData().urls()
-    for url in urls:
-      path = adjustSep(url.toLocalFile())
-      tmp = path.split(".")
-      if path in self.__DBPathList:
-        QMessageBox.information(self, "Warning", "This file already in.", QMessageBox.Ok)
-        continue
-      if len(tmp) != 1:
-        if inExtension(path):
-          self.DBList.addItem(basename(path))
-          self.__DBPathList.append(path)
-      else:
-        self.__addDir(tmp[0])
-
-  def __addDir(self, item):
-    for roots, dirs, files in os.walk(item):
-      for f in files:
-        if inExtension(f):
-          self.DBList.addItem(basename(f))
-          self.__DBPathList.append(adjustSep(roots + '/' + f))
-  
-      if len(dirs) != 0:
-        for d in dirs:
-          self.__que.append(d)
-        return self.__addDir(self.__que.popleft())
-    try:
-      if len(self.__que) != 0:
-        return self.__addDir(self.__que.popleft())
-    except:
-      return
-
-class MyTree(QTreeView):
-  def __init__(self, path = None, header = None, query = None):
-    super(MyTree, self).__init__()
-    
-    if path is None or header is None or query is None:
-      return
-
-    self.setSortingEnabled(True)
-
-  def __setup(self, path, header, query):
-    self.__DBLister = DBLister(path, header, query)
-    self.__DBLister.addIntObject.connect(self.__addItem)
-    self.__DBLister.addStrObject.connect(self.__addItem)
-    self.__DBLister.addDoubleObject.connect(self.__addItem)
-    self.__DBLister.addBoolObject.connect(self.__addItem)
-    
-    self.__DBLister.setup()
-    self.__DBLister.start()
-    
-  def __addItem(self, cnt, index, val):
-    item = QStandardItem(str(val))
-    model = self.model()
-    model.setItem(cnt, index, item)
-
-class DBLister(QThread):
-  addIntObject = pyqtSignal(int, int, int)
-  addStrObject = pyqtSignal(int, int, str)
-  addDoubleObject = pyqtSignal(int, int, float)
-  addBoolObject = pyqtSignal(int, int, bool)
-
-  def __init__(self, path, header, query):
-    super(DBLister, self).__init__()
-
-    self.__db_path = path
-    self.__header = header
-    self.__query = query
-
-    self.mutex = QMutex()
-
-  def setup(self):
-    self.stoped = False
-  
-  def stop(self):
-    with QMutexLocker(self.mutex):
-      self.stoped = True
-  
-  def run(self):
-    conn = sqlite3.connect(self.__db_path)
-    cur = conn.cursor()
-    try:
-      cur.execute(self.__query)
-    except sqlite3.Error:
-      self.finished.emit()
-      return 
-    cnt = 0
-    while True:
-      values = cur.fetchone()
-      if values is None:
-        break
-      for index, v in enumerate(values):
-        t = type(v)
-        if t == int:
-          self.addIntObject.emit(cnt, index, v)
-        elif t == str:
-          self.addStrObject.emit(cnt, index, v)
-        elif t == float:
-          self.addDoubleObject.emit(cnt, index, v)
-        elif t == bool:
-          self.addBoolObject.emit(cnt, index, v)
-      cnt += 1
-
-    cur.close()
-    conn.close()
-    self.stop()
-    self.finished.emit()
-
-  def keyPressEvent(self, event):
-    if event.key() == Qt.Key_Escape:
-      self.finished.emit()
-  
 def main():
   app = QApplication(sys.argv)
   font = QFont("Meiryo")
