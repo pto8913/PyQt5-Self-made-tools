@@ -4,8 +4,8 @@
 root　─ /DB/ <br>
 　　　└/DBViewer/DBViewer.py <br>
 　　　　　　　　 /DBViewer/DBViewerUI.py <br>
-　　　　　　　　　　　　　　└ DBViewerUIFunc.py <br>
-　　　　　　　　　　　　　　└ DBViwerDirSetting.py <br>
+　　　　　　　　　　　　　 /DBViewerUIFunc.py <br>
+　　　　　　　　　　　　　 /DBViwerDirSetting.py <br>
 
 
 # サポート
