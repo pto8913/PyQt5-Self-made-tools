@@ -63,6 +63,7 @@ class MainWidget(DBListUI):
       self.__isQueryChanged = True
 
     check = self.checkQueryType(self.query)
+    # 0 : select ~
     if check == 0:
       res = self.modelSetUp()
       if not res:
@@ -76,11 +77,12 @@ class MainWidget(DBListUI):
       self.modelSetUp()
       self.tree.setModel(self.model)
 
+    # 1 : create, drop, pragma, delete, update, alter
     elif check == 1:
       QMessageBox.information(self, "Complete", "Finished change", QMessageBox.Ok)
 
     elif check == -1:
-      QMessageBox.Critical(
+      QMessageBox.critical(
         self, 
         "Warning", 
         """Please check your query and send a pull request or issue to my repository <br>
@@ -127,7 +129,7 @@ class MainWidget(DBListUI):
       self.conn.commit()
       self.closeDB()
     except Error as e:
-      QMessageBox.Critical(self, "error", "{}".format(e), QMessageBox.Ok)
+      QMessageBox.critical(self, "error", "{}".format(e), QMessageBox.Ok)
       self.closeDB()
       return False
 
@@ -157,7 +159,7 @@ class MainWidget(DBListUI):
       self.cur.execute(self.query)
 
     except Error as e:
-      QMessageBox.Critical(self, "error", "{}".format(e), QMessageBox.Ok)
+      QMessageBox.critical(self, "error", "{}".format(e), QMessageBox.Ok)
       self.closeDB()
       return False
 
@@ -213,7 +215,7 @@ class MainWidget(DBListUI):
     try:
       self.cur.execute(self.query)
     except Error as e:
-      QMessageBox.Critical(self, "error", "{}".format(e), QMessageBox.Ok)
+      QMessageBox.critical(self, "error", "{}".format(e), QMessageBox.Ok)
       self.closeDB()
       return False
     self.__header = []
