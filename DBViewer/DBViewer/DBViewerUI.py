@@ -144,7 +144,7 @@ class DBListUI(QWidget):
       path = adjustSep(url.toLocalFile())
       tmp = path.split(".")
       if path in self.DBPathList:
-        QMessageBox.Warning(self, "Warning", "This file already in.", QMessageBox.Ok)
+        QMessageBox.warning(self, "Warning", "This file already in.", QMessageBox.Ok)
         continue
       if len(tmp) != 1:
         if inExtension(path, "db"):
@@ -153,6 +153,7 @@ class DBListUI(QWidget):
       else:
         self.__addDir(tmp[0])
 
+  # item add to DBList
   def __addDir(self, item):
     for roots, dirs, files in os.walk(item):
       for f in files:
