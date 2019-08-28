@@ -10,7 +10,7 @@
 　　-> main.pyの変更は諸事情により来年の3月から4月を予定しています <br>
  
 # SQLiteViewer 2019/08/04 
-<img src="https://github.com/pto8913/PyQt5-s-tools/blob/master/Image/DBViewer.png" title="sample">
+<img src="https://github.com/pto8913/PyQt5-s-tools/blob/master/Image/DBViewerQuery.png" title="sample">
 　　-> SQLite以外にも対応させる（未定）<br>
 　　-> 10万件表示するとかなり重たくなる。 <br>
   
