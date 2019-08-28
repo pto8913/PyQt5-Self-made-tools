@@ -19,7 +19,7 @@
 ・電卓　<br>
 
 ・キャプチャツール <br>
-　　-> win10 なら Win + Shift + S <br>
+　　-> ~win10 なら Win + Shift + S~ <br>
 
 ・時計  <br>
 
