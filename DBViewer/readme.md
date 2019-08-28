@@ -1,4 +1,4 @@
-<img src="https://github.com/pto8913/PyQt5-s-tools/blob/master/Image/DBViewer.png" title="サンプル">
+<img src="https://github.com/pto8913/PyQt5-s-tools/blob/master/Image/DBViewerQuery.png" title="サンプル">
 
 # ディレクトリ構成
 root　─ /DB/ <br>
