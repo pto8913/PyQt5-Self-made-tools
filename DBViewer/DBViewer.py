@@ -3,7 +3,8 @@ import sys
 from sqlite3 import connect, Error
 
 from PyQt5.QtWidgets import (
-  QApplication, QListWidget, QMessageBox,   
+  QApplication, QListWidget, QMessageBox,
+  QTextEdit, 
 )
 
 from PyQt5.QtCore import (
@@ -54,13 +55,26 @@ class MainWidget(DBListUI):
 
     self.initUI()
 
+    self.queryEdit.selectionChanged.connect(self.updateQuery)
+
   # -------------------------------- Execute Query ----------------------------------
   
   def execQuery(self):
-    self.query = self.queryEdit.toPlainText().replace("\n", " ")
+    if self.query == "select count(*) from table;":
+      self.query = self.queryEdit.toPlainText().replace("\n", " ").split(" ")
+      queries = self.__deleteSpa(self.query)
+      self.query = " ".join(queries)
 
-    if self.query not in ("select count(*) from table;"):
+    if self.query.count(';') > 1:
+      queries = self.queryEdit.toPlainText().replace("\n", " ").split(";")
+      queries = self.__deleteSpa(queries)
+      print(queries)
+      self.query = queries[-1]
+
+    if self.query != "select count(*) from table;":
       self.__isQueryChanged = True
+
+    print(self.query)
 
     check = self.checkQueryType(self.query)
     # 0 : select ~
@@ -82,6 +96,7 @@ class MainWidget(DBListUI):
       QMessageBox.information(self, "Complete", "Finished change", QMessageBox.Ok)
 
     elif check == -1:
+      print(self.query)
       QMessageBox.critical(
         self, 
         "Warning", 
@@ -92,17 +107,47 @@ class MainWidget(DBListUI):
   
   # -----------------------------------------------------------------------------------
 
+  # ------------------------------- benri na function ---------------------------------
+  def __deleteSpa(self, items):
+    items = list(filter(lambda x: x != "" and x != " ", items))
+    return items
+  
+  def keyPressEvent(self, event):
+    if event.modifiers() & Qt.ControlModifier and event.key() == Qt.Key_Return:
+      self.execQuery()
+
+  # -----------------------------------------------------------------------------------
+
+  # ----------------------------------- For Query -------------------------------------
+
+  def updateQuery(self):
+    cursor = self.queryEdit.textCursor()
+    if not cursor.hasSelection():
+      self.query = "select count(*) from table;"
+      return
+    self.query = cursor.selectedText().replace("\u2029", "")
+    if self.query.count(';') > 1:
+      queries = self.query.split(";")
+      queries = self.__deleteSpa(queries)
+      self.query = queries[-1]
+      self.query = self.query
+
+  # -----------------------------------------------------------------------------------
+
   # ------------------------------- For Execute Query ---------------------------------
 
   def checkQueryType(self, item):
-    funcType = item.split(" ")[0].lower()
+    words = item.split(" ")
+    words = self.__deleteSpa(words)
+    print(words)
+    funcType = words[0].lower()
 
     if funcType == ("select"):
       return 0
 
     if funcType in ("create", "drop"):
-      if funcType == "create" and item.split(" ")[1].lower() == "database":
-        self.CreateDB(item.split(" ")[-1].replace(";", ""))
+      if funcType == "create" and words[1].lower() == "database":
+        self.CreateDB(words[-1].replace(";", ""))
         return 1
 
       res = self.CreatOrDropTable()
@@ -118,7 +163,7 @@ class MainWidget(DBListUI):
         return 1
 
       self.query = self.pre_query
-      return 0
+      return 10
     return -1
 
   def CreatOrDropTable(self):
@@ -165,6 +210,8 @@ class MainWidget(DBListUI):
 
     self.conn.commit()
     self.closeDB()
+    if self.pre_query:
+      self.query = self.pre_query
     return True
 
   # -----------------------------------------------------------------------------------
