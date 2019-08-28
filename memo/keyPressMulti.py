@@ -24,6 +24,7 @@ class Main(QWidget):
     layout.addWidget(self.label)
   
   def keyPressEvent(self, event):
+    # modifier (修飾子)
     if event.modifiers() & Qt.ControlModifier and event.key() == Qt.Key_Return:
       self.label.setText("Press")
       return
