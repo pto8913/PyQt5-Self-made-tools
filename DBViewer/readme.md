@@ -1,11 +1,19 @@
 <img src="https://github.com/pto8913/PyQt5-s-tools/blob/master/Image/DBViewerQuery.png" title="サンプル">
 
 # ディレクトリ構成
-root　─ /DB/ <br>
-　　　└/DBViewer/DBViewer.py <br>
-　　　　　　　　 /DBViewer/DBViewerUI.py <br>
-　　　　　　　　　　　　　 /DBViewerUIFunc.py <br>
-　　　　　　　　　　　　　 /DBViwerDirSetting.py <br>
+```PlainText
+├── DB_dir
+│   ├── database_file
+│
+└── DBViewer_dir
+    ├── DBViewer.py
+    └── DBViewer_dir
+        ├── DBViewerUI.py
+        ├── __init__.py
+        ├── myfunc.py
+        ├── DBViewerUIFunc.py
+        └── DBViewerDirSetting.py
+```
 
 
 # 対応
