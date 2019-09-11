@@ -16,10 +16,12 @@ from PyQt5.QtGui import (
 )
 
 from DBViewer import (
-  MainUI, DBListUI, DirSetting as Ds,
+  MainUI, DBListUI, 
   MyTree, Notifier, Thread, 
   adjustSep, inExtension, basename,
 )
+
+from pathlib import Path
 
 class Main(MainUI):
   def __init__(self):
@@ -33,7 +35,7 @@ class MainWidget(DBListUI):
   def __init__(self):
     super(MainWidget, self).__init__()
     
-    self.__db_dir = Ds().getDir()
+    self.__db_dir = str(Path().resolve())
 
     self.DBList = QListWidget()
     self.DBPathList = []

@@ -9,7 +9,7 @@ from collections import deque
 
 import os
 
-from .myfunc import basename, adjustSep, inExtension
+from DBViewer.myfunc import basename, adjustSep, inExtension
 
 class MainUI(QMainWindow):
   def initUI(self):
@@ -162,6 +162,7 @@ class DBListUI(QWidget):
           self.DBPathList.append(adjustSep(roots + '/' + f))
   
       if len(dirs) != 0:
+        self.__que = deque()
         for d in dirs:
           self.__que.append(d)
         return self.__addDir(self.__que.popleft())
