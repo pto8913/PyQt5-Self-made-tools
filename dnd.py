@@ -1,3 +1,5 @@
+# use os
+
 import os
 import sys
 from PyQt5.QtWidgets import (
@@ -67,3 +69,34 @@ def main():
 
 if __name__ == '__main__':
   main()
+
+# use pathlib
+```
+def dragEnterEvent(self, event) -> None:
+    if event.mimeData().hasUrls():
+      event.accept()
+    else:
+      event.ignore()
+
+def dropEvent(self, event) -> None:
+  urls = event.mimeData().urls()
+  for url in urls:
+    path = url.toLocalFile()
+    x = Path(path)
+    tmp = path.split('.')
+    if x in self.__xmlPathList:
+      QMessageBox.information(self, 'Warning', 'This file already in.', QMessageBox.Ok)
+      continue
+    if len(tmp) != 1:
+      if inExtension(x, "db"):
+        self.xmlList.addItem(x.name)
+        self.__xmlPathList.append(x)
+    else:
+      print(tmp[0])
+      self.__addDir(Path(tmp[0]))
+
+def __addDir(self, item: str) -> None:
+  for f in list(item.glob("**/*.db")):
+    self.xmlList.addItem(f.name)
+    self.__xmlPathList.append(f)
+```
