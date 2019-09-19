@@ -15,11 +15,12 @@ from PyQt5.QtGui import (
   QFont, QStandardItemModel, 
 )
 
-from DBViewer import (
-  MainUI, DBListUI, 
-  MyTree, Notifier, Thread, 
-  adjustSep, inExtension, basename,
-)
+from DBViewer.DBViewerUI import MainUI, DBListUI
+from DBViewer.DBViewerThread import MyTree, Notifier, Thread
+from DBViewer.myfunc import function
+
+basename = lambda x: function().basename(x)
+inExtension = lambda x, ext: function().inExtension(x, ext)
 
 from pathlib import Path
 
@@ -35,7 +36,7 @@ class MainWidget(DBListUI):
   def __init__(self):
     super(MainWidget, self).__init__()
     
-    self.__db_dir = str(Path().resolve())
+    self.__DirInit()
 
     self.DBList = QListWidget()
     self.DBPathList = []
@@ -304,6 +305,16 @@ class MainWidget(DBListUI):
       self.__isQueryChanged = False
     self.queryEdit.setText(self.query)
     return True
+
+  # -----------------------------------------------------------------------------------
+
+  # ----------------------------------- Init Func -------------------------------------
+
+  def __DirInit(self) -> None:
+    current_dir = Path(__file__).parent.resolve()
+
+    self.__db_dir = current_dir.joinpath("DB")
+    self.__CheckDir(self.__db_dir)
 
   # -----------------------------------------------------------------------------------
     
