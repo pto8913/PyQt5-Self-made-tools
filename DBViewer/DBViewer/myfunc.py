@@ -1,15 +1,10 @@
-import os
-
-def basename(item):
-  return os.path.basename(item)
-
-def inExtension(item, ext):
-  try:
-    if item.split(".")[-1] == ext:
-      return True
-  except:
-    pass
-  return False
-
-def adjustSep(path):
-  return path.replace('/', os.sep)
+class function:
+  def inExtension(self, item: str, ext: str) -> bool:
+    try:
+      if ext in item.suffix:
+        return True
+    except:
+      return False
+  
+  def basename(self, item: str) -> str:
+    return str(item.name)

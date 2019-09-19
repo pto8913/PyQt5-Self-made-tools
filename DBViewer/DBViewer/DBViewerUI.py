@@ -7,9 +7,9 @@ from PyQt5.QtWidgets import (
 
 from collections import deque
 
-import os
+from pathlib import Path
 
-from DBViewer.myfunc import basename, adjustSep, inExtension
+from .myfunc import basename, adjustSep, inExtension
 
 class MainUI(QMainWindow):
   def initUI(self):
@@ -132,44 +132,32 @@ class DBListUI(QWidget):
 
   # ------------------------------ Set DBList (DnD) -----------------------------------
 
-  def dragEnterEvent(self, event):
+  def dragEnterEvent(self, event) -> None:
     if event.mimeData().hasUrls():
       event.accept()
     else:
       event.ignore()
-  
-  def dropEvent(self, event):
+
+  def dropEvent(self, event) -> None:
     urls = event.mimeData().urls()
     for url in urls:
-      path = adjustSep(url.toLocalFile())
-      tmp = path.split(".")
-      if path in self.DBPathList:
-        QMessageBox.warning(self, "Warning", "This file already in.", QMessageBox.Ok)
+      path = url.toLocalFile()
+      x = Path(path)
+      tmp = path.split('.')
+      if x in self.__xmlPathList:
+        QMessageBox.information(self, 'Warning', 'This file already in.', QMessageBox.Ok)
         continue
       if len(tmp) != 1:
-        if inExtension(path, "db"):
-          self.DBList.addItem(basename(path))
-          self.DBPathList.append(path)
+        if inExtension(x, "db"):
+          self.xmlList.addItem(x.name)
+          self.__xmlPathList.append(x)
       else:
-        self.__addDir(tmp[0])
-
-  # item add to DBList
-  def __addDir(self, item):
-    for roots, dirs, files in os.walk(item):
-      for f in files:
-        if inExtension(f, "db"):
-          self.DBList.addItem(basename(f))
-          self.DBPathList.append(adjustSep(roots + '/' + f))
+        print(tmp[0])
+        self.__addDir(Path(tmp[0]))
   
-      if len(dirs) != 0:
-        self.__que = deque()
-        for d in dirs:
-          self.__que.append(d)
-        return self.__addDir(self.__que.popleft())
-    try:
-      if len(self.__que) != 0:
-        return self.__addDir(self.__que.popleft())
-    except:
-      return
+  def __addDir(self, item: str) -> None:
+    for f in list(item.glob("**/*.db")):
+      self.xmlList.addItem(f.name)
+      self.__xmlPathList.append(f)
 
   # -----------------------------------------------------------------------------------
