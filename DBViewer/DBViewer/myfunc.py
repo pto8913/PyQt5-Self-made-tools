@@ -4,7 +4,9 @@ class function:
       if ext in item.suffix:
         return True
     except:
-      return False
+      if ext in item:
+        return True
+    return False
   
   def basename(self, item: str) -> str:
     return str(item.name)

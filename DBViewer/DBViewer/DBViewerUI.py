@@ -9,7 +9,10 @@ from collections import deque
 
 from pathlib import Path
 
-from .myfunc import basename, adjustSep, inExtension
+from DBViewer.myfunc import function
+
+basename = lambda x: function().basename(x)
+inExtension = lambda x, ext: function().inExtension(x, ext)
 
 class MainUI(QMainWindow):
   def initUI(self):
@@ -98,31 +101,23 @@ class DBListUI(QWidget):
     self.DBPathList = []
 
   def clickedDelete(self):
-    ret = QMessageBox.information(self, "Delete", "If Delete from List, Yes. <br> Delete from PC, No.", QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
+    ret = QMessageBox.information(self, "Delete", "If Delete from List, Yes. <br> Delete from PC, No.", QMessageBox.Yes | QMessageBox.Cancel)
     if ret == QMessageBox.Yes:
       try:
         row = self.DBList.row(self.DBList.selectedItems()[0])
         self.DBPathList.pop(row)
         self.DBList.takeItem(row)
       except:
-        return
-    elif ret == QMessageBox.No:
-      try:
-        row = self.DBList.row(self.DBList.selectedItems()[0])
-        os.remove(self.DBPathList[row])
-        self.DBPathList.pop(row)
-        self.DBList.takeItem(row)
-      except:
-        return
+        return None
     elif ret == QMessageBox.Cancel:
-      return 
+      return None
 
   def clickedAdd(self):
-    filename, ok = QFileDialog.getOpenFileNames(self, "Open File", self.__db_dir, filter = "db file(*.db)")
+    filename, ok = QFileDialog.getOpenFileNames(self, "Open File", str(self.db_dir), filter = "db file(*.db)")
     if not ok:
-      return
+      return None
     for f in filename:
-      f = adjustSep(f)
+      f = Path(f)
       if f in self.DBPathList:
         continue
       self.DBList.addItem(basename(f))
@@ -144,20 +139,20 @@ class DBListUI(QWidget):
       path = url.toLocalFile()
       x = Path(path)
       tmp = path.split('.')
-      if x in self.__xmlPathList:
+      if x in self.DBPathList:
         QMessageBox.information(self, 'Warning', 'This file already in.', QMessageBox.Ok)
         continue
       if len(tmp) != 1:
         if inExtension(x, "db"):
-          self.xmlList.addItem(x.name)
-          self.__xmlPathList.append(x)
+          self.DBList.addItem(x.name)
+          self.DBPathList.append(x)
       else:
         print(tmp[0])
         self.__addDir(Path(tmp[0]))
   
   def __addDir(self, item: str) -> None:
     for f in list(item.glob("**/*.db")):
-      self.xmlList.addItem(f.name)
-      self.__xmlPathList.append(f)
+      self.DBList.addItem(f.name)
+      self.DBPathList.append(f)
 
   # -----------------------------------------------------------------------------------

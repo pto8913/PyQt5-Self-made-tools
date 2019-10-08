@@ -12,20 +12,30 @@ from PyQt5.QtCore import (
 
 from sqlite3 import connect, Error
 
+import time
+
 class Notifier(QObject):
   notify = pyqtSignal()
 
 class Thread(QThread):
-  def __init__(self, notifier, name):
-    super().__init__()
-    
-    self.notifier = notifier
-    self.name = name
+    def __init__(self, notifier, name):
+        super().__init__()
+        
+        self.notifier = notifier
+        self.name = name
   
-  def run(self):
-    print('start thread :' + self.name)
-    self.notifier.notify.emit()
-    self.finished.emit()
+    def run(self):
+        print('start thread :' + self.name)
+        while self.isRunning:
+            self.notifier.notify.emit()
+            time.sleep(0.1)
+
+    def onLoop(self):
+        self.isRunning = True
+  
+    def offLoop(self):
+        self.isRunning = False
+  
 
 class MyTree(QTreeView):
   def __init__(self, path = None, header = None, query = None):
@@ -74,7 +84,7 @@ class DBLister(QThread):
       self.stoped = True
   
   def run(self):
-    conn = connect(self.__db_path)
+    conn = connect(str(self.__db_path))
     cur = conn.cursor()
     try:
       cur.execute(self.__query)
