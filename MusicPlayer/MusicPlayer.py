@@ -7,6 +7,8 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QFont
 
+import sqlite3
+
 from MusicPlayerUI import MusicPlayerUI
 
 class MusicPlayer(MusicPlayerUI):
@@ -14,99 +16,46 @@ class MusicPlayer(MusicPlayerUI):
         super(MusicPlayer, self).__init__(parent)
         pygame.init()
 
-        self.index = 0
         self.music = pygame.mixer.music
 
         self.setAcceptDrops(True)
 
         self.PathInit()
-        self.pause = True
+        self.pause = False
         self.loop = False
 
-        self.FileList = QListWidget(self)
-        self.FilePathList = []
-        self.setFileList()
-        self.FileList.itemSelectionChanged.connect(self.FileListChanged)
-        self.fileName = ""
+        self.row = 0
+
+        self.music_list = QListWidget(self)
+        self.music_path_list = []
+        self.setMusicList()
+        self.music_list.itemSelectionChanged.connect(self.setMusic)
+        self.music_name = ""
         
         self.initUI()
 
-    def clickedExit(self):
-        sys.exit()
-
-    def loopMusic(self):
-        if self.loop:
-            self.loopButton.setText("Loop?")
-            self.loop = False
-        else:
-            self.loopButton.setText("Loop")  
-            self.loop = True
-
-    def startMusic(self):
-        try:
-            row = self.FileList.row(self.FileList.selectedItems()[0])
-        except:
-            return
-        self.music.load(str(self.FilePathList[row]))
-        self.music.play(1)
-        self.isPause()
-        if self.loop:
-            self.resetMusic()
-            return
-        PLAY_END = pygame.USEREVENT+1
-        self.music.set_endevent(PLAY_END)
-        tmp = True
-        while tmp:
-            for event in pygame.event.get():
-                if event.type == PLAY_END:
-                    self.checkNext()
-                    tmp = False
-                    break
-        self.startMusic()
-
-    def setFileList(self):
-        for item in [f for f in self.music_dir.glob("**/*") if re.search(r".+\.(mp3|m4a)", f.name)]:
-            self.FileList.addItem(item.name)
-            self.FilePathList.append(item)
-
-    def FileListChanged(self):
-        self.fileName = self.FileList.selectedItems()[0].text()
-        self.startMusic()
-
-    def nextMusic(self):
-        if self.loop:
-            self.resetMusic()
-            return
-        self.isPause()
-        self.checkNext()
-        self.startMusic()
-
-    def checkNext(self):
-        if self.index+1 < len(self.FileList):
-            self.index += 1
-        else:
-            self.index = 0
-        self.fileName = self.FileList.item(self.index).text()
-
-    def pauseMusic(self):
-        if self.pause:
-            self.music.pause()
-            self.pauseButton.setText("Clicked Pause")
-            self.pause = False
-        else:
-            self.music.unpause()
-            self.isPause()
 
     def isPause(self):
-        if not self.pause:
-            self.pause = True
+        if self.pause:
+            self.pause = False
             self.pauseButton.setText("Pause?")
 
-    def resetMusic(self):
-        self.music.rewind()
+
+    def setMusic(self):
+        self.row = self.music_list.row(self.music_list.selectedItems()[0])
+        self.startMusic()
+
+    # ---------------------------- Init ---------------------------
 
     def PathInit(self):
         self.music_dir = Path().home().joinpath("music")
+
+
+    def setMusicList(self):
+        for item in self.music_dir.glob("**/*.mp3"):
+            self.music_list.addItem(item.name)
+            self.music_path_list.append(item)
+
 
 def main():
     app = QApplication(sys.argv)

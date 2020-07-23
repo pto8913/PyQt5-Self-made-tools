@@ -1,5 +1,5 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QLCDNumber
+from PyQt5.QtWidgets import QApplication, QWidget, QLCDNumber, QHBoxLayout
 from PyQt5.QtCore import QTimer, QDateTime
 
 class Timer(QWidget):
@@ -15,6 +15,11 @@ class Timer(QWidget):
     self.timeDisplay.setDigitCount(8)
     self.updtTime()
     timer.start(1000)
+
+    layout = QHBoxLayout()
+    layout.addWidget(self.timeDisplay)
+
+    self.setLayout(layout)
 
     self.setGeometry(300, 300, 500, 200)
     self.setWindowTitle('Timer')
