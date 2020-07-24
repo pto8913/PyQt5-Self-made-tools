@@ -9,13 +9,12 @@ class Notifier(QObject):
     notify = pyqtSignal()
 
 class LoadItemDataThread(QThread):
-    BEGIN_LoadDelegate = pyqtSignal()
     LoadLineDelegate = pyqtSignal(int)
     FIND_GridHighSizeDelegate = pyqtSignal(int, int)
     FIND_ElevDataDelegate = pyqtSignal(int, float)
     FinishedLoopDelegate = pyqtSignal()
 
-    def __init__(self, notifier, InItemPath: str):
+    def __init__(self, notifier, InItemPath: str, ThreadIndex: int):
         super(LoadItemDataThread, self).__init__()
 
         self.Notifier = notifier
@@ -26,8 +25,8 @@ class LoadItemDataThread(QThread):
         self.ElevDataPtn = re.compile(r"(.*),(.*)")
 
         self.ItemPath = InItemPath
-        self.isRunning = False
 
+        self.isRunning = False
     def run(self) -> None:
         with open(self.ItemPath, encoding = "utf-8") as f:
             bIsFindedLow = False
@@ -40,7 +39,6 @@ class LoadItemDataThread(QThread):
             LoadLineCount = 0
 
             __Lines = f.readlines()
-            self.BEGIN_LoadDelegate.emit()
             TotalLine = len(__Lines)
             for Line in __Lines:
                 LoadLineCount += 1

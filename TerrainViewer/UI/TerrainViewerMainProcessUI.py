@@ -11,14 +11,9 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt
 
 # --- MyL ---
-from MainProcess.LoadItemDataThread import LoadItemDataThread, Notifier
-from UI.SelectFileUI import SelectFileUI
 
 class TerrainViewerMainProcessUI(QWidget):
     def InitUI(self):
-        CreateButton = QPushButton("Create")
-        CreateButton.clicked.connect(self.OnClickedCreateTerrain)
-
         SaveButton = QPushButton("Save")
         SaveButton.clicked.connect(self.OnClickedSave)
         
@@ -26,11 +21,12 @@ class TerrainViewerMainProcessUI(QWidget):
         ExitButton.clicked.connect(self.OnClickedExit)
 
         ButtonLayout = QVBoxLayout()
-        ButtonLayout.addWidget(CreateButton)
         ButtonLayout.addWidget(ExitButton)
 
+        self.ItemListTabWidget.addTab(self.ItemList, "ItemList")
+
         UserInteractiveLayout = QVBoxLayout()
-        UserInteractiveLayout.addWidget(self.ItemList)
+        UserInteractiveLayout.addWidget(self.ItemListTabWidget)
         UserInteractiveLayout.addLayout(ButtonLayout)
 
         self.CanvasLayout = QVBoxLayout()
@@ -42,23 +38,6 @@ class TerrainViewerMainProcessUI(QWidget):
         Layout.addLayout(self.CanvasLayout)
 
         self.setLayout(Layout)
-
-    def OnClickedCreateTerrain(self) -> None:
-        self.LoadItemThreadNotifier = Notifier()
-        self.LoadItemThread = LoadItemDataThread(
-            self.LoadItemThreadNotifier, 
-            self.ItemDirList[self.SelectedItemIndex]
-        )
-        self.LoadItemThreadNotifier.moveToThread(self.LoadItemThread)
-
-        self.LoadItemThread.BEGIN_LoadDelegate.connect(self.OnBeginLoadItem)
-        self.LoadItemThread.LoadLineDelegate.connect(self.OnLoadLine)
-        self.LoadItemThread.FinishedLoopDelegate.connect(self.OnFinishedLoadItem)
-        self.LoadItemThread.FIND_GridHighSizeDelegate.connect(self.OnFIND_GridHighSize)
-        self.LoadItemThread.FIND_ElevDataDelegate.connect(self.OnFIND_ElevData)
-
-        self.LoadItemThread.OnLoop()
-        self.LoadItemThread.start()
 
     def OnClickedSave(self) -> None:
         try:
