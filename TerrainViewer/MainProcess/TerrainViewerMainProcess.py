@@ -3,11 +3,9 @@ from pathlib import Path
 import sys
 import re
 import queue
-from typing import Dict
+from typing import Dict, List, Tuple
 
 # --- PL ---
-import cv2
-from PIL import Image
 import numpy as np
 import matplotlib.cm as cmap
 import matplotlib.pyplot as plt
@@ -19,18 +17,18 @@ from PyQt5.QtWidgets import (
     QLabel, QProgressBar
 )
 from PyQt5.QtGui import QPixmap, QImage
-from PyQt5.QtCore import QThreadPool, QThread
+from PyQt5.QtCore import QThread, pyqtSignal
 
 # --- MyL ---
 from UI.TerrainViewerMainProcessUI import TerrainViewerMainProcessUI
-from MainProcess.__LoadItemDataThread import LoadedItemDataThread
+from SubProcesses.__LoadItemDataThread import LoadedItemDataThread
+from SubProcesses.ItemImageJoinableTileSearch import ItemImageJoinableTileSearch
 from UI.SelectFileUI import SelectFileUI
 from Templates.MyStructs import LoadedItemData
-   
-MINIMUM_ELEV = -100
-MAX_THREADS = 4
 
 class TerrainViewerMainProcess(TerrainViewerMainProcessUI):
+    StatusMessageDelegate = pyqtSignal(str)
+
     def __init__(self) -> None:
         super(TerrainViewerMainProcess, self).__init__()
 
@@ -60,7 +58,10 @@ class TerrainViewerMainProcess(TerrainViewerMainProcessUI):
         self.LoadItemDataThread = QThread()
         self.LoadProgressBar = QProgressBar()
         self.LoadItemTasks = queue.Queue()
-        self.ItemDatas = []
+        self.LoadedItemDatas = {}
+
+        self.ItemImageJoinableTileSearchThread = QThread()
+        self.ItemImageJoinableTiles = []
         
         self.InitUI()
 
@@ -89,71 +90,30 @@ class TerrainViewerMainProcess(TerrainViewerMainProcessUI):
         self.ItemListTabWidget.addTab(self.SelectFile, "SelectFiles")
         self.ItemListTabWidget.setCurrentIndex(1)
 
-    # -------------- create terrain --------------
-    def OnCreateTerrainThread(self, InFiles: Dict[str, bool]) -> None:
-        if InFiles == {}:
-            return
-        self.ItemDatas = []
-        # 読み込みを始めたら、プログレスバーを表示する
-        self.CanvasLayout.addWidget(self.LoadProgressBar)
-
-        # ロードするタスクをキューに詰める
-        for i, path in enumerate(self.CurrentDir.glob("**/*.xml")):
-            path_temp = path.name.split("-")
-            if path_temp[4] in InFiles:
-                self.LoadItemTasks.put((path, i))
-        self.OnCallNextTask()
-    
-    def OnCallNextTask(self) -> None:
-        if self.LoadItemTasks.qsize() <= 0:
-            print("Finished LoadTask")
-            self.FinishedLoadTask()
-            return
-        else:
-            # プログレスバーを0％にする
-            self.LoadProgressBar.setValue(0)
-            self.ForceQuitTaskThread()
-            path, i = self.LoadItemTasks.get()
-            print(f"Begin {path}")
-            self.obj = LoadedItemDataThread(path, i)
-
-            self.obj.ReturnLoadedItemDataDelegate.connect(self.OnGetLoadedItemData)
-            self.obj.ReturnLoadLine.connect(self.OnUpdateLoadProgressBar)
-            self.obj.FinishedDelegate.connect(self.OnCallNextTask)
-            self.obj.moveToThread(self.LoadItemDataThread)
-            self.LoadItemDataThread.started.connect(self.obj.LoadItemData)
-            
-            self.LoadItemDataThread.start()
-
-    def ForceQuitTaskThread(self) -> None:
-        if self.LoadItemDataThread.isRunning():
-            self.LoadItemDataThread.terminate()
-            self.LoadItemDataThread.wait()
-    
+    # -------------- UI action --------------
     # ファイルの一行が読み込まれるたびにプログレスバーを更新
     def OnUpdateLoadProgressBar(self, LoadItemProgress: int) -> None:
         self.LoadProgressBar.setValue(LoadItemProgress)
 
-    def OnGetLoadedItemData(self, LoadedItemDatas: LoadedItemData) -> None:
-        self.ItemDatas.append(LoadedItemDatas)
+    # -------------- create terrain --------------
+    def OnCreateTerrainThread(self, InFiles: Dict[str, bool]) -> None:
+        if InFiles == {}:
+            return
+        # 選択されたファイルを繋げられるようにブロックごとにまとめる
+        self.BeginItemImageJoinableTileSearch(InFiles)
 
-    def FinishedLoadTask(self) -> None:
-        for ItemData in self.ItemDatas:
-            print(ItemData.ItemNum)
-            ItemData2D = ItemData.Reshape()
-            
-            self.ConvertndarrayToImage(ItemData2D)
+        self.LoadedItemDatas = {}
+        # 読み込みを始めたら、プログレスバーを表示する
+        self.CanvasLayout.addWidget(self.LoadProgressBar)
 
-            plt.savefig(str(self.CurrentDir) + f"-{ItemData.ItemNum}.png")
-            print(str(self.CurrentDir) + f"-{ItemData.ItemNum}.png")
-        print("Finished Save All Figure")
+        # ロードするタスクをキューに詰める
+        for path in self.CurrentDir.glob("**/*.xml"):
+            path_temp = path.name.split("-")
+            if path_temp[4] in InFiles:
+                self.LoadItemTasks.put(path)
+        self.OnCallNextLoadItemDataTask()
 
-        self.CreateTerrainImage(self.ItemDatas[0].Reshape())
-
-        # プログレスバーを非表示にする
-        self.LoadProgressBar.setParent(None)   
-
-    def CreateTerrainImage(self, Elev):
+    def CreateTerrainImage(self, Elev) -> None:
         self.ConvertndarrayToImage(Elev)
 
         w, h = self.FigureCanvas.get_width_height()
@@ -181,3 +141,88 @@ class TerrainViewerMainProcess(TerrainViewerMainProcessUI):
         
         self.FigureCanvas = FigureCanvas(fig)
         self.FigureCanvas.draw()
+    
+    # -------------- Load Select Item Data --------------
+    def OnCallNextLoadItemDataTask(self) -> None:
+        if self.LoadItemTasks.qsize() <= 0:
+            print("Finished LoadTask")
+            self.FinishedLoadItemDataTask()
+            return
+        else:
+            # プログレスバーを0％にする
+            self.LoadProgressBar.setValue(0)
+            self.ForceQuitLoadItemDataTaskThread()
+            path = self.LoadItemTasks.get()
+            self.StatusMessageDelegate.emit(f"Now Loading {path}")
+            self.LoadItemData = LoadedItemDataThread(path)
+
+            self.LoadItemData.ReturnLoadedItemDataDelegate.connect(self.OnGetLoadedItemData)
+            self.LoadItemData.ReturnLoadLine.connect(self.OnUpdateLoadProgressBar)
+            self.LoadItemData.moveToThread(self.LoadItemDataThread)
+            self.LoadItemDataThread.started.connect(self.LoadItemData.BeginLoadItemData)
+            
+            self.LoadItemDataThread.start()
+    
+    def OnGetLoadedItemData(self, ItemNum: int, LoadedItemDatas: LoadedItemData) -> None:
+        self.LoadedItemDatas[ItemNum] = LoadedItemDatas
+        self.OnCallNextLoadItemDataTask()
+
+    def ForceQuitLoadItemDataTaskThread(self) -> None:
+        if self.LoadItemDataThread.isRunning():
+            self.LoadItemDataThread.terminate()
+            self.LoadItemDataThread.wait()
+        
+    def FinishedLoadItemDataTask(self) -> None:
+        self.ItemImageArraysList = []
+        for Tiles in self.ItemImageJoinableTiles:
+            vTemp = np.array([])
+
+            ResultName = ""
+            for Tile in Tiles:
+                ResultName += str(Tile)
+                if not isinstance(Tile, np.ndarray):
+                    vTemp = self.LoadedItemDatas[Tile].Reshape()
+                else:
+                    hTemp = np.array([])
+                    for elem in Tile:
+                        temp = self.MakeEmptyImage()
+                        if elem != -1:
+                            temp = self.LoadedItemDatas[elem].Reshape()
+
+                        if not len(hTemp):
+                            hTemp = temp
+                        else:
+                            hTemp = np.hstack((hTemp, temp))
+                    if not len(vTemp):
+                        vTemp = hTemp
+                    else:
+                        vTemp = np.vstack((hTemp, vTemp))
+
+            self.ItemImageArraysList.append(vTemp)
+            self.ConvertndarrayToImage(vTemp)
+            plt.savefig(f"{self.CurrentDir}-{ResultName}.png")
+        print(self.ItemImageArraysList)
+
+        # プログレスバーを非表示にする
+        self.LoadProgressBar.setParent(None)   
+
+    # -------------- Joinable Image Search --------------
+    # 選択されたファイルを繋げられるようにブロックごとにまとめる
+    def BeginItemImageJoinableTileSearch(self, InFiles: Dict[str, bool]) -> None:
+        self.ForceQuitItemImageJoinableTileSearchThread()
+        self.ItemImageJoinableTileSearch = ItemImageJoinableTileSearch(InFiles)
+        self.ItemImageJoinableTileSearch.JoinableTilesDelegate.connect(self.OnGetJoinableTiles)
+        self.ItemImageJoinableTileSearch.moveToThread(self.ItemImageJoinableTileSearchThread)
+        self.ItemImageJoinableTileSearchThread.started.connect(self.ItemImageJoinableTileSearch.BeginSearch)
+        self.ItemImageJoinableTileSearchThread.start()
+
+    def ForceQuitItemImageJoinableTileSearchThread(self) -> None:
+        if self.ItemImageJoinableTileSearchThread.isRunning():
+            self.ItemImageJoinableTileSearchThread.terminate()
+            self.ItemImageJoinableTileSearchThread.wait()
+
+    def OnGetJoinableTiles(self, InTiles: List[np.ndarray]) -> None:
+        self.ItemImageJoinableTiles = InTiles
+    
+    def MakeEmptyImage(self) -> np.ndarray:
+        return np.full((150, 225), 32768)

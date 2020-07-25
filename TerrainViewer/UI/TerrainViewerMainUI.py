@@ -7,6 +7,9 @@ class TerrainViewerMainUI(QMainWindow):
     def InitUI(self) -> None:
         MenuBar = self.menuBar()
 
+        StatusBar = self.statusBar()
+        StatusBar.showMessage("Ready.")
+
         SaveAct = QAction('&Save', self)
         SaveAct.setShortcut('Ctrl+S')
         SaveAct.triggered.connect(self.MainProcess.OnClickedSave)
